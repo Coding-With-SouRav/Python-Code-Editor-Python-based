@@ -1,0 +1,6 @@
+pip install astunparse  
+pip install watchdog  
+pip install jedi  
+pip install pillow  
+pip install pyperclip  
+pip install google-generativeai  
