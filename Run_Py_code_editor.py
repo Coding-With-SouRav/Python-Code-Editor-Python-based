@@ -20,6 +20,7 @@ from watchdog.events import FileSystemEventHandler
 import signal
 import pyperclip
 import google.generativeai as genai
+from tkinterdnd2 import DND_FILES, TkinterDnD
 
 
 
@@ -148,7 +149,6 @@ class ReverseToolTip:
             self.tipwindow.destroy()
         self.tipwindow = None
 
-
 class VSCodeLikeEditor:
 
     class FileChangeHandler(FileSystemEventHandler):
@@ -212,7 +212,7 @@ class VSCodeLikeEditor:
         self.should_update = False
         self.sidebar_visible = True
         self.selection_anchor = None
-
+        
         genai.configure(api_key='AIzaSyCgepCd72RunvdGLuD-258qaawcWeHBubg')
         self.generation_config = {"temperature": 0.9, "max_output_tokens": 2048}
         
@@ -522,6 +522,8 @@ class VSCodeLikeEditor:
         self.file_tree.tag_configure("file", font=("Math Italic", 12), foreground="#0ce466")
         self.file_tree.tag_configure("cut_item", background="yellow")
         self.file_tree.configure(style="Custom.Treeview")
+        self.file_tree.drop_target_register(DND_FILES)
+        self.file_tree.dnd_bind('<<Drop>>', self.handle_external_drop)
         self.file_tree.bind("<MouseWheel>", self.on_mousewheel)
         self.file_tree.bind("<<TreeviewSelect>>", self.open_file_from_tree)
         self.file_tree.bind("<Button-3>", self.show_context_menu)
@@ -678,6 +680,13 @@ class VSCodeLikeEditor:
             insertbackground="white", yscrollcommand=lambda *args: (self.scrollbar.set(*args), self.sync_scroll(*args)),
         )
         self.code_editor.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.code_editor.tag_configure("current_line", 
+                              borderwidth=1,
+                              relief="ridge"
+                              )  
+        self.code_editor.tag_raise("current_line", "sel")
+        for char in ['"', "'", "(", "{", "["]:
+            self.code_editor.bind(char, self.wrap_selected_text, add="+")
 
 
         self.horizontal_scrollbar = ttk.Scrollbar(self.code_editor, orient="horizontal", cursor="arrow")
@@ -765,7 +774,7 @@ class VSCodeLikeEditor:
         
         # terminal menu
         self.terminal_menu = tk.Menu(self.menu_bar,tearoff=0,bg='cyan')
-        self.terminal_menu.add_command(label="Show Terminal         Ctrl+T", font=self.menu_bar_font_style, background='black', foreground='white', command=self.reopen_terminal)
+        self.terminal_menu.add_command(label="Show Terminal         Ctrl+Shift+T", font=self.menu_bar_font_style, background='black', foreground='white', command=self.reopen_terminal)
         self.terminal_menu.add_command(label="Clear Terminal        Ctrl+Shift+C", font=self.menu_bar_font_style, background='black', foreground='white', command=self.terminal_delete_clear)
         self.terminal_menu.add_separator()
         self.terminal_menu.add_command(label="New Terminal          Ctrl+Shift+`", font=self.menu_bar_font_style, background='black', foreground='white', command=self.open_new_terminal)
@@ -781,6 +790,7 @@ class VSCodeLikeEditor:
 
         # Bindings
         self.code_editor.bind("<KeyRelease>", lambda e: (self.update_line_numbers(), self.show_suggestions(e), self.on_text_change(e)))
+        
         self.code_editor.bind("<KeyPress>", self.on_key_press)
         self.code_editor.bind("<Return>", self.update_line_numbers, add="+")
         self.code_editor.bind("<BackSpace>", self.update_line_numbers, add="+")
@@ -789,6 +799,7 @@ class VSCodeLikeEditor:
         self.code_editor.bind("<ButtonRelease-1>", lambda event: self.update_line_numbers())
         self.code_editor.bind("<Return>", self.auto_indent, add="+")
         self.code_editor.bind("<Return>", self.insert_selected_suggestion)
+        self.code_editor.bind("<Return>", self.bg_label.place_forget())
         self.code_editor.bind("<Control-c>", self.copy_text)
         self.code_editor.bind("<Control-x>", self.cut_text)
         self.code_editor.bind("<Control-v>", self.on_paste)
@@ -833,6 +844,9 @@ class VSCodeLikeEditor:
         self.code_editor.bind("<Control-Shift-Left>", lambda e: self.modify_selection("left", True))
         self.code_editor.bind("<Control-Shift-Right>", lambda e: self.modify_selection("right", True))
         self.code_editor.bind("<Button-1>", self.handle_mouse_click)
+        self.code_editor.after(1, self._highlight_syntax)
+
+
 
 
 
@@ -867,8 +881,8 @@ class VSCodeLikeEditor:
         self.root.bind("<Control-c>", self.copy_items)
         self.root.bind("<Control-v>", self.paste_items)
         self.root.bind("<F6>", self.toggle_all_folders)
-        self.root.bind("<Control-t>", self.reopen_terminal)
-        self.root.bind("<Control-T>", self.reopen_terminal)
+        self.root.bind("<Control-Shift-t>", self.reopen_terminal)
+        self.root.bind("<Control-Shift-T>", self.reopen_terminal)
         self.root.bind("<Control-Shift-E>", self.toggle_sidebar)
         self.root.bind("<Control-Shift-e>", self.toggle_sidebar)
         self.root.bind("<Control-Shift-c>", self.terminal_delete_clear)
@@ -907,7 +921,7 @@ class VSCodeLikeEditor:
             except:
                 pass
         self.root.destroy()
-
+    
     def load_window_geometry(self):
         if os.path.exists(self.config_file):
             config = configparser.ConfigParser()
@@ -998,7 +1012,7 @@ class VSCodeLikeEditor:
             self.code_editor.edit_reset()  # Reset undo/redo stack
             self.code_editor.edit_modified(False)  # Mark as unmodified
         except UnicodeDecodeError:
-            self.custom_showerror("Error", f"[✖] Cannot open '{os.path.basename(filepath)}'...")
+            self.terminal_output(f"[✖] Cannot open '{os.path.basename(filepath)}'...\n", error=True)
 
     def custom_showerror(self, title, message):
         CustomMessageBox(self.root, title, message)
@@ -1118,53 +1132,63 @@ class VSCodeLikeEditor:
         self.highlight_timer = self.root.after(200, self._highlight_syntax)
 
     def _highlight_syntax(self):
-        first_visible_line = self.code_editor.index("@0,0").split(".")[0]
-        last_visible_line = self.code_editor.index("@0,10000").split(".")[0]
-        for line in range(int(first_visible_line), int(last_visible_line) + 1):
-            # Apply syntax highlighting to this line
-            pass
 
-        datatypes = {"str",
-                    "int", "float", "bool", "list", "tuple", "dict", "set", "complex", "bytes", "range", "enumerate"}
-        keywords1 = {"for",
-                    "while", "if", "else", "elif", "try", "except", "finally",
-                    "break", "continue", "return", "import", "from", "as", "with", 'input',
-                    "lambda", "yield", "global", "nonlocal", "pass", "raise", 'do'}
-        keywords2 = {"and",
-                    "or", "not", "is", "in", "def", 'print', "class", 'True', 'False', 'None', 'NOTE'}
+        if not hasattr(self, "_scroll_binding_added"):
+            # self.code_editor.bind("<MouseWheel>", lambda e: self._highlight_syntax())
+            self._scroll_binding_added = True
+
+        # Get the visible region's start and end indices
+        start_vis = self.code_editor.index("@0,0")
+        end_vis = self.code_editor.index("@0,10000")
+        first_visible_line = int(start_vis.split('.')[0])
+        last_visible_line = int(end_vis.split('.')[0])
+
+        # Define syntax elements and colors
+        datatypes = {"str", "int", "float", "bool", "list", "tuple", "dict", "set", "complex", "bytes", "range", "enumerate"}
+        keywords1 = {"for", "while", "if", "else", "elif", "try", "except", "finally", "break", "continue", "return", "import", "from", "as", "with", 'input', "lambda", "yield", "global", "nonlocal", "pass", "raise", 'do'}
+        keywords2 = {"and", "or", "not", "is", "in", "def", 'print', "class", 'True', 'False', 'None', 'NOTE'}
         COLORS = {
-            "data_type": "#03f34a",  # Green
-            "keyword1": "#ff00ff",  # Magenta
-            "keyword2": "blue",  # Blue
-            "non_data_type": "cyan",  # Cyan
-            "bracket": "yellow"  # Yellow for brackets
+            "data_type": "#03f34a",
+            "keyword1": "#ff00ff",
+            "keyword2": "blue",
+            "non_data_type": "cyan",
+            "bracket": "yellow"
         }
 
-        # Remove all previous tags
-        for tag in COLORS.keys():
-            self.code_editor.tag_remove(tag, "1.0", tk.END)
+        # Remove previous tags only in the visible region
+        tags_to_remove = [
+            *COLORS.keys(), "number", "string", "comment",
+            "comment_bracket", "import_text", "brown_bracket",
+            "bracket_content"  # New tag for our brown content
+        ]
+        for tag in tags_to_remove:
+            self.code_editor.tag_remove(tag, start_vis, end_vis)
 
-        content = self.code_editor.get("1.0", tk.END)
+        # Get visible text content
+        visible_text = self.code_editor.get(start_vis, end_vis)
 
-        # **Step 1: Highlight brackets first** (they should not overwrite other colors)
-        for match in re.finditer(r'[\[\]{}()]', content):
-            start_index = f"1.0+{match.start()}c"
-            end_index = f"1.0+{match.end()}c"
-            self.code_editor.tag_add("bracket", start_index, end_index)
+        # Highlight brackets
+        for match in re.finditer(r'[\[\]{}()]', visible_text):
+            start_pos = match.start()
+            end_pos = match.end()
+            start_idx = f"{start_vis}+{start_pos}c"
+            end_idx = f"{start_vis}+{end_pos}c"
+            self.code_editor.tag_add("bracket", start_idx, end_idx)
 
-        # **Step 2: Find words and check if inside brackets**
-        words = re.finditer(r'\b\w+\b', content)
-        bracket_stack = []  # Track open brackets
-
+        # Highlight keywords and data types
+        words = re.finditer(r'\b\w+\b', visible_text)
+        bracket_stack = []
         for match in words:
             word = match.group()
-            start_index = f"1.0+{match.start()}c"
-            end_index = f"1.0+{match.end()}c"
+            start_pos = match.start()
+            end_pos = match.end()
+            start_idx = f"{start_vis}+{start_pos}c"
+            end_idx = f"{start_vis}+{end_pos}c"
 
-            # **Check if inside brackets**
-            inside_bracket = any(
-                start <= match.start() <= end for start, end in bracket_stack
-            )
+            # Check if inside brackets (only considers visible region brackets)
+            inside_bracket = any(start <= start_pos <= end for start, end in bracket_stack)
+            if inside_bracket:
+                continue  # Skip highlighting if inside brackets
 
             if word in datatypes:
                 tag = "data_type"
@@ -1175,106 +1199,130 @@ class VSCodeLikeEditor:
             else:
                 tag = "non_data_type"
 
-            # **Apply the color tag but keep brackets' color intact**
-            existing_tags = self.code_editor.tag_names(start_index)
+            # Apply tag if not overlapping with brackets
+            existing_tags = self.code_editor.tag_names(start_idx)
+            if "bracket" not in existing_tags:
+                self.code_editor.tag_add(tag, start_idx, end_idx)
 
-            if "bracket" in existing_tags:  # Keep brackets visible
-                self.code_editor.tag_add("bracket", start_index, end_index)
-
-            # Apply word color
-            self.code_editor.tag_add(tag, start_index, end_index)
-
-        # **Step 3: Configure tag colors**
+        # Configure tag colors
         for tag, color in COLORS.items():
             self.code_editor.tag_configure(tag, foreground=color)
 
-        # all numbers
-        self.code_editor.tag_remove("number", "1.0", tk.END)
-        numbers = r"[1234567890]"
-        content = self.code_editor.get("1.0", tk.END)
-        for match in re.finditer(numbers, content):
-            start, end = match.start(), match.end()
-            start_idx = f"1.0 + {start} chars"
-            end_idx = f"1.0 + {end} chars"
+        # Highlight numbers
+        numbers = r"\b\d+\b"
+        for match in re.finditer(numbers, visible_text):
+            start_pos = match.start()
+            end_pos = match.end()
+            start_idx = f"{start_vis}+{start_pos}c"
+            end_idx = f"{start_vis}+{end_pos}c"
             self.code_editor.tag_add("number", start_idx, end_idx)
         self.code_editor.tag_config("number", foreground="#970fed")
 
-        # string in quotes
-        self.code_editor.tag_remove("string", "1.0", tk.END)
-        content = self.code_editor.get("1.0", tk.END)
-        string_pattern = r"(['\"])(?:(?=(\\?))\2.)*?\1"
-        for match in re.finditer(string_pattern, content):
-            start, end = match.start(), match.end()
-            start_idx = f"1.0 + {start} chars"
-            end_idx = f"1.0 + {end} chars"
+        # Highlight strings
+        # Triple-quoted strings
+        triple_pattern = r"('''|\"\"\")(.*?)\1"
+        for match in re.finditer(triple_pattern, visible_text, flags=re.DOTALL):
+            start_pos, end_pos = match.span()
+            start_idx = f"{start_vis}+{start_pos}c"
+            end_idx = f"{start_vis}+{end_pos}c"
             self.code_editor.tag_add("string", start_idx, end_idx)
+        # Single/double quoted strings
+        string_pattern = r"(['\"])(.*?)\1"
+        for match in re.finditer(string_pattern, visible_text, flags=re.DOTALL):
+            start_pos, end_pos = match.span()
+            start_idx = f"{start_vis}+{start_pos}c"
+            end_idx = f"{start_vis}+{end_pos}c"
+            if "string" not in self.code_editor.tag_names(start_idx):
+                self.code_editor.tag_add("string", start_idx, end_idx)
         self.code_editor.tag_config("string", foreground="#c25507")
 
-        # import module
-        self.code_editor.tag_remove("comment", "1.0", tk.END)
-        content = self.code_editor.get("1.0", tk.END)
-        # Regex to match words after 'import' and 'from' (but not the dots)
-        pattern = r"\b(?:from|import)\s+((?:\w+\.)*\w+(?:\s*,\s*(?:\w+\.)*\w+)*)"
-        for match in re.finditer(pattern, content):
-            words = match.group(1)  # Extract matched words
-            start_idx = match.start(1)  # Get start index
-            current_idx = start_idx
-            for word in words.split(","):  # Handle multiple imports
-                word = word.strip()
-                word_start = content.find(word, current_idx)  # Find word position
-                if word_start != -1:
-                    self.highlight_word_dots(word, word_start)
-                    current_idx = word_start + len(word)
+        # Highlight imports
+        import_pattern = r"\b(?:from|import)\s+([\w\.]+)(?:\s*,\s*([\w\.]+))*"
+        for match in re.finditer(import_pattern, visible_text):
+            modules = match.groups()
+            start_pos = match.start()
+            for mod in modules:
+                if mod:
+                    mod_start = visible_text.find(mod, start_pos)
+                    if mod_start != -1:
+                        mod_end = mod_start + len(mod)
+                        start_idx = f"{start_vis}+{mod_start}c"
+                        end_idx = f"{start_vis}+{mod_end}c"
+                        self.code_editor.tag_add("import_text", start_idx, end_idx)
         self.code_editor.tag_config("import_text", foreground="#05be1c")
 
-        # comments
-        self.code_editor.tag_remove("comment", "1.0", tk.END)  # Remove old comment tags
-        self.code_editor.tag_remove("comment_bracket", "1.0", tk.END)  # Remove old comment bracket tags
-        text = self.code_editor.get("1.0", tk.END)  # Get full text
-        lines = text.split("\n")  # Split into lines
-        comment_positions = set()
-        for i, line in enumerate(lines):
-            comment_start = line.find("#")  # Find `#`
-            if comment_start != -1:  # If `#` exists in the line
-                start_idx = f"{i+1}.{comment_start}"
-                end_idx = f"{i+1}.end"
+        # Highlight comments
+        for line_num in range(first_visible_line, last_visible_line + 1):
+            line_start = f"{line_num}.0"
+            line_end = f"{line_num}.end"
+            line_text = self.code_editor.get(line_start, line_end)
+            comment_start = line_text.find('#')
+            if comment_start != -1:
+                start_idx = f"{line_num}.{comment_start}"
+                end_idx = f"{line_num}.end"
                 self.code_editor.tag_add("comment", start_idx, end_idx)
-
-                # Store comment bracket positions
-                for j in range(comment_start, len(line)):
-                    if line[j] in "(){}[]":
-                        bracket_idx = f"{i+1}.{j}"
-                        comment_positions.add(bracket_idx)
+                # Check for brackets in comments
+                for idx, char in enumerate(line_text[comment_start:], start=comment_start):
+                    if char in "(){}[]":
+                        bracket_idx = f"{line_num}.{idx}"
+                        self.code_editor.tag_add("comment_bracket", bracket_idx, f"{bracket_idx}+1c")
         self.code_editor.tag_config("comment", foreground="green")
-        for pos in comment_positions:
-            self.code_editor.tag_add("comment_bracket", pos, f"{pos}+1c")
-        self.code_editor.tag_config("comment_bracket", foreground="green")  # Always green
+        self.code_editor.tag_config("comment_bracket", foreground="green")
 
-    #   process brackets, skipping those in comments
+
+        # brackets
         bracket_colors = ["yellow", "violet", "cyan", "#1d00e4", "orange", "magenta"]
-        self.code_editor.tag_remove("bracket", "1.0", "end")
-        text = self.code_editor.get("1.0", "end-1c")
-        stack = []
+        # Configure each bracket color tag
+        for color in bracket_colors:
+            self.code_editor.tag_configure(color, foreground=color)
+        self.code_editor.tag_config("brown_bracket", foreground="#8B4513")
+
+        # Process entire text up to visible end for accurate nesting
+        initial_text  = self.code_editor.get("1.0", start_vis)
         bracket_pairs = {"(": ")", "{": "}", "[": "]"}
-        
-        for i, char in enumerate(text):
-            pos = f"1.0 + {i}c"
-            # Skip if in comment
-            if 'comment' in self.code_editor.tag_names(pos):
-                continue
-                
-            if char in bracket_pairs.keys():
-                stack.append((char, i))
+        stack = []
+        for char in initial_text:
+            if char in bracket_pairs:
+                stack.append(char)
             elif char in bracket_pairs.values():
-                if stack and bracket_pairs.get(stack[-1][0]) == char:
-                    opening_char, opening_index = stack.pop()
-                    opening_pos = f"1.0 + {opening_index}c"
-                    if 'comment' in self.code_editor.tag_names(opening_pos):
-                        continue
-                    level = len(stack)
-                    color = bracket_colors[level % len(bracket_colors)]
-                    self.apply_color(opening_index, color)
-                    self.apply_color(i, color)
+                if stack and bracket_pairs.get(stack[-1]) == char:
+                    stack.pop()
+
+        # Process visible area for nested brackets
+        visible_text = self.code_editor.get(start_vis, end_vis)
+        visible_stack = []  # Tracks positions of opening brackets in visible area
+
+        for i, char in enumerate(visible_text):
+            pos = f"{start_vis}+{i}c"
+            current_tags = self.code_editor.tag_names(pos)
+            
+            # Skip if inside comment/string
+            if 'comment' in current_tags or 'string' in current_tags or 'comment_bracket' in current_tags:
+                if char in bracket_pairs or char in bracket_pairs.values():
+                    self.code_editor.tag_add("brown_bracket", pos, f"{pos}+1c")
+                continue
+
+            if char in bracket_pairs:
+                # Opening bracket in visible area
+                stack.append(char)
+                visible_stack.append((char, pos))
+                level = len(stack) - 1  # Current depth before pushing
+                color = bracket_colors[level % len(bracket_colors)]
+                self.code_editor.tag_add(color, pos, f"{pos}+1c")
+            elif char in bracket_pairs.values():
+                if stack and bracket_pairs.get(stack[-1]) == char:
+                    # Closing bracket matches
+                    popped_char = stack.pop()
+                    level_after_pop = len(stack)
+                    if visible_stack and visible_stack[-1][0] == popped_char:
+                        # Matching opening is in visible area
+                        _, opening_pos = visible_stack.pop()
+                        color = bracket_colors[level_after_pop % len(bracket_colors)]
+                        self.code_editor.tag_add(color, pos, f"{pos}+1c")
+                    else:
+                        # Matching opening is outside visible area
+                        color = bracket_colors[level_after_pop % len(bracket_colors)]
+                        self.code_editor.tag_add(color, pos, f"{pos}+1c")
 
     def on_text_change(self, event=None):
         if self.update_timer:
@@ -1432,6 +1480,7 @@ class VSCodeLikeEditor:
             self.line_numbers.yview(*args)
         else:
             self.line_numbers.yview_moveto(self.code_editor.yview()[0])  # Move line numbers with text editor
+        self.highlight_syntax()
 
     def on_mouse_wheel(self, event):
         """Sync mouse wheel scrolling for both text editor and line numbers."""
@@ -1576,7 +1625,6 @@ class VSCodeLikeEditor:
         self.stop_button.pack(side=tk.RIGHT, padx=5, pady=5)  # Show stop button
         self.run_button.pack_forget() 
         self.terminal_input.config(state='disabled')  # Disable terminal input
-        # self.root.config(cursor="watch")  # Change cursor to waiting
 
         # 🔥 Determine working directory:
         if self.folder_path and self.current_file and self.current_file.startswith(self.folder_path):
@@ -1597,13 +1645,13 @@ class VSCodeLikeEditor:
                 bufsize=0,
                 cwd=working_directory,
                 startupinfo=startupinfo,
-                # creationflags=subprocess.CREATE_NO_WINDOW,
                 env={**os.environ, 'PYTHONUNBUFFERED': '1'}
             )
             self.active_processes.append(self.process) 
         except Exception as e:
             self.terminal_output(f"Failed to start process: {e}\n", error=True)
             self.process = None
+            self.stop_code()
             return
 
         # Start threads to read stdout and stderr
@@ -1875,17 +1923,27 @@ class VSCodeLikeEditor:
         finally:
             self.process = None
 
-    def open_folder(self, event=None):
-        folder = filedialog.askdirectory()
-        if folder:
-            self.folder_path = os.path.abspath(folder)
-            self.file_tree.delete(*self.file_tree.get_children())  
+    def open_folder(self, event=None, path=None):
+        # Get default directory (user's Desktop)
+        default_dir = os.path.join(os.path.expanduser("~"), "Desktop")
+        
+        if not path:
+            # Use system file dialog with proper starting directory
+            path = filedialog.askdirectory(
+                title="Select Folder to Open",
+                initialdir=default_dir,
+                mustexist=True
+            )
+
+        if path and os.path.isdir(path):
+            self.folder_path = os.path.abspath(path)
+            self.file_tree.delete(*self.file_tree.get_children())
             self.update_file_tree(self.folder_path)
-            folder_name = os.path.basename(folder)
-            truncated_name = self.truncate_folder_name(folder_name)
-            self.folder_name_label.config(text=truncated_name, font=self.font_style) 
-            self.folder_name_label.config(fg='#ffff00')
+            folder_name = os.path.basename(path)
+            self.folder_name_label.config(text=self.truncate_folder_name(folder_name), 
+                                        fg='#ffff00', font=self.font_style)
             self.start_file_monitor()
+            self.root.focus_set()
 
     def select_file(self, file_path):
         """Call this function when selecting a file from the file tree"""
@@ -1905,6 +1963,8 @@ class VSCodeLikeEditor:
         total_lines = int(self.code_editor.index("end-1c").split(".")[0])
 
         cursor_line = int(self.code_editor.index(tk.INSERT).split(".")[0])
+        self.code_editor.tag_remove("current_line", "1.0", tk.END)
+        self.code_editor.tag_add("current_line", f"{cursor_line}.0", f"{cursor_line}.end+1c")
 
         # Generate line numbers
         line_text = "\n".join(str(i) for i in range(1, total_lines + 1))
@@ -2193,7 +2253,9 @@ class VSCodeLikeEditor:
 
     def on_paste(self, event):
         """Update line numbers after pasting text."""
-        self.root.after(1, self.update_line_numbers)  # Ensure line number update after pasting
+        self.bg_label.place_forget()
+        self.code_editor.after(1, self.update_line_numbers)  # Ensure line number update after pasting
+        self.code_editor.after(1, self.highlight_syntax)  # Ensure line number update after pasting
         self.root.after(1, self.auto_save)
 
         return None  # Allow normal paste behavior
@@ -3650,8 +3712,6 @@ class VSCodeLikeEditor:
     def toggle_all_folders(self, event=None):
         if not hasattr(self, 'folders_expanded'):
             self.folders_expanded = False  # Initial state
-
-        # Get all items in the file tree
         all_items = self.file_tree.get_children()
 
         def expand_all(items):
@@ -3905,7 +3965,7 @@ class VSCodeLikeEditor:
         
         self.reopen_terminal()
         # Show processing message
-        self.terminal_output("\n[AI] Generating code...\n", error=False)
+        self.terminal_output("\n[AI] Generating code...Please Wait...\n", error=False)
         
         # Run in background thread
         threading.Thread(target=self.generate_ai_code, args=(query,), daemon=True).start()
@@ -3954,7 +4014,6 @@ class VSCodeLikeEditor:
 
     def show_ai_error(self, error_msg):
         """Show error message for AI failures"""
-        self.custom_showerror("AI Error", f"Failed to generate code:\n{error_msg}")
         self.terminal_output(f"[AI Error] {error_msg}\n", error=True)
 
     def cut_whole_line(self, event):
@@ -3970,11 +4029,48 @@ class VSCodeLikeEditor:
 
         return "break"  # Prevent default Ctrl+X behavior
 
+    def wrap_selected_text(self, event):
+            """Wraps selected text with brackets or quotes when a key is pressed."""
+            char = event.char
+            pairs = {'"': '"', "'": "'", "(": ")", "{": "}", "[": "]"}
 
+            # Get current selection
+            try:
+                start = self.code_editor.index(tk.SEL_FIRST)
+                end = self.code_editor.index(tk.SEL_LAST)
+                selected_text = self.code_editor.get(start, end)
+            except tk.TclError:
+                return  # No selection, do nothing
 
+            if char in pairs:
+                self.code_editor.delete(start, end)  # Remove selected text
+                self.code_editor.insert(start, f"{char}{selected_text}{pairs[char]}")  # Wrap with the character
+                new_end = self.code_editor.index(f"{start} + {len(selected_text) + 2} chars")
+                self.code_editor.tag_add(tk.SEL, start, new_end)  # Update selection
 
+            return "break"  # Prevent default character insertion
 
-
+    def handle_external_drop(self, event):
+        # Handle Windows path formatting with curly braces
+        raw_paths = event.data.split()
+        cleaned_paths = [p.strip('{}').replace('\\', '/') for p in raw_paths]
+        
+        for path in cleaned_paths:
+            if os.path.isdir(path):
+                self.folder_path = os.path.abspath(path)
+                folder_name = os.path.basename(self.folder_path)
+                self.folder_name_label.config(
+                    text=self.truncate_folder_name(folder_name),
+                    fg='#ffff00',
+                    font=self.font_style
+                )
+                self.file_tree.delete(*self.file_tree.get_children())
+                self.update_file_tree(self.folder_path)
+                self.start_file_monitor()
+                break  # Only process first valid folder
+            elif os.path.isfile(path):
+                self.open_file(path)
+                break
 
 
 
@@ -3995,9 +4091,10 @@ if __name__ == "__main__":
         with open(script_path, 'r', encoding='utf-8') as f:
             script_content = f.read()
         exec(script_content, {'__name__': '__main__'})
+        
     else:
         # Start the editor GUI
-        root = tk.Tk()
+        root = TkinterDnD.Tk()
         editor = VSCodeLikeEditor(root)
         root.mainloop()
 
