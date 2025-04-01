@@ -24,12 +24,6 @@ import google.generativeai as genai
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 
-
-
-
-
-
-
 def resource_path(relative_path):
     """ Get absolute path to resources for both dev and PyInstaller """
     try:
@@ -43,113 +37,6 @@ def resource_path(relative_path):
         raise FileNotFoundError(f"Resource not found: {full_path}")
     return full_path
 
-class CustomMessageBox(tk.Toplevel):
-    def __init__(self, parent, title, message):
-        super().__init__(parent)
-        self.title(title)
-        self.config(bg="black")
-        
-        label = tk.Label(self, text=message, bg="black", fg="red", font=("Consolas", 14))
-        label.pack(padx=20, pady=10)
-        
-        ok_button = tk.Button(self, text=" OK ", command=self.destroy, 
-                            bg="#007acc", fg="white", font=("Consolas", 14))
-        ok_button.pack(pady=5)
-
-        self.geometry("+%d+%d" % (parent.winfo_rootx()+50, parent.winfo_rooty()+50))
-        self.grab_set()
-
-class CustomInputDialog(tk.Toplevel):
-    def __init__(self, parent, title, prompt):
-        super().__init__(parent)
-        self.title(title)
-        self.config(bg="black")
-        self.entry = None
-        self.result = None
-
-        label = tk.Label(self, text=prompt, bg="black", fg="cyan", font=("Consolas", 14))
-        label.pack(padx=20, pady=10)
-
-        self.entry = tk.Entry(self, font=("Consolas", 14), bg="black", fg="white", insertbackground="white")
-        self.entry.pack(padx=20, pady=5)
-        self.entry.bind("<Return>", lambda e: self.ok_pressed())  # Enter key binding
-
-        button_frame = tk.Frame(self, bg="black")
-        button_frame.pack(pady=5)
-
-        ok_button = tk.Button(button_frame, text="OK", command=self.ok_pressed, 
-                            bg="#007acc", fg="white", font=("Consolas", 14), width=8)
-        ok_button.pack(side=tk.RIGHT, padx=5)
-
-        cancel_button = tk.Button(button_frame, text="Cancel", command=self.cancel_pressed,
-                                 bg="red", fg="white", font=("Consolas", 14), width=8)
-        cancel_button.pack(side=tk.LEFT, padx=5)
-
-        self.geometry("+%d+%d" % (parent.winfo_rootx()+50, parent.winfo_rooty()+50))
-        self.grab_set()
-
-    def ok_pressed(self):
-        self.result = self.entry.get()
-        self.destroy()
-
-    def cancel_pressed(self):
-        self.result = None
-        self.destroy()
-
-    def show(self):
-        self.wait_window()
-        return self.result
-
-class ToolTip:
-    def __init__(self, widget, text):
-        self.widget = widget
-        self.text = text
-        self.tipwindow = None
-        self.widget.bind("<Enter>", self.showtip)
-        self.widget.bind("<Leave>", self.hidetip)
-
-    def showtip(self, event=None):
-        if self.tipwindow:
-            return
-        # Calculate position relative to the main window
-        x = self.widget.winfo_rootx() + 25
-        y = self.widget.winfo_rooty() + 25
-        self.tipwindow = tw = tk.Toplevel(self.widget)
-        tw.wm_overrideredirect(True)  # Remove window decorations
-        tw.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(tw, text=self.text, bg="black", fg="#ffff00", font=("Consolas", 11, "italic"))
-        label.pack()
-
-    def hidetip(self, event=None):
-        if self.tipwindow:
-            self.tipwindow.destroy()
-        self.tipwindow = None
-
-class ReverseToolTip:
-    def __init__(self, widget, text):
-        self.widget = widget
-        self.text = text
-        self.tipwindow = None
-        self.widget.bind("<Enter>", self.showtip)
-        self.widget.bind("<Leave>", self.hidetip)
-
-    def showtip(self, event=None):
-        if self.tipwindow:
-            return
-        # Calculate position relative to the main window
-        x = self.widget.winfo_rootx() -100
-        y = self.widget.winfo_rooty() + 25
-        self.tipwindow = tw = tk.Toplevel(self.widget)
-        tw.wm_overrideredirect(True)  # Remove window decorations
-        tw.wm_geometry(f"+{x}+{y}")
-        label = tk.Label(tw, text=self.text, bg="black", fg="#ffff00", font=("Consolas", 11, "italic"))
-        label.pack()
-
-    def hidetip(self, event=None):
-        if self.tipwindow:
-            self.tipwindow.destroy()
-        self.tipwindow = None
-
 class VSCodeLikeEditor:
 
     class FileChangeHandler(FileSystemEventHandler):
@@ -160,26 +47,124 @@ class VSCodeLikeEditor:
         def on_any_event(self, event):
             self.editor.should_update = True
 
+    class CustomInputDialog(tk.Toplevel):
+        def __init__(self,editor, parent, title, prompt):
+            super().__init__(parent)
+            self.editor = editor
+            self.title(title)
+            self.overrideredirect(True) 
+            self.config(bg=self.editor.BLACK)
+            self.entry = None
+            self.result = None
+
+            self.CustomInputDialog_label = tk.Label(self, text=prompt, bg=self.editor.BLACK, fg='cyan', font=("Consolas", 14))
+            self.CustomInputDialog_label.pack(padx=20, pady=10)
+
+            self.entry = tk.Entry(self, font=("Consolas", 14), bg=self.editor.BLACK, fg="white", insertbackground="white")
+            self.entry.pack(padx=20, pady=5)
+            self.entry.bind("<Return>", lambda e: self.ok_pressed())  # Enter key binding
+
+            button_frame = tk.Frame(self, bg=self.editor.BLACK)
+            button_frame.pack(pady=5)
+
+            self.ok_button = tk.Button(button_frame, text="OK", command=self.ok_pressed, 
+                                    bg="#007acc", fg="white", font=("Consolas", 14), width=8)
+            self.ok_button.pack(side=tk.RIGHT, padx=5)
+
+            self.cancel_button = tk.Button(button_frame, text="Cancel", command=self.cancel_pressed,
+                                        bg="red", fg="white", font=("Consolas", 14), width=8)
+            self.cancel_button.pack(side=tk.LEFT, padx=5)
+
+            self.geometry("+%d+%d" % (parent.winfo_rootx()+50, parent.winfo_rooty()+50))
+            self.grab_set()
+
+                        
+        def ok_pressed(self):
+            self.result = self.entry.get()
+            self.destroy()
+
+        def cancel_pressed(self):
+            self.result = None
+            self.destroy()
+
+        def show(self):
+            self.wait_window()
+            return self.result
+                
+    class ToolTip:
+        def __init__(self, editor, widget, text):
+            self.editor = editor
+            self.widget = widget
+            self.text = text
+            self.tipwindow = None
+            self.widget.bind("<Enter>", self.showtip)
+            self.widget.bind("<Leave>", self.hidetip)
+
+        def showtip(self, event=None):
+            if self.tipwindow:
+                return
+            # Calculate position relative to the main window
+            x = self.widget.winfo_rootx() + 25
+            y = self.widget.winfo_rooty() + 25
+            self.tipwindow = tw = tk.Toplevel(self.widget)
+            tw.wm_overrideredirect(True)  # Remove window decorations
+            tw.wm_geometry(f"+{x}+{y}")
+            self.ToolTip_label = tk.Label(tw, text=self.text, bg=self.editor.BLACK, fg="#ffff00", font=("Consolas", 11, "italic"))
+            self.ToolTip_label.pack()
+
+        def hidetip(self, event=None):
+            if self.tipwindow:
+                self.tipwindow.destroy()
+            self.tipwindow = None
+
+    class ReverseToolTip:
+        def __init__(self,editor, widget, text):
+            self.editor = editor
+            self.widget = widget
+            self.text = text
+            self.tipwindow = None
+            self.widget.bind("<Enter>", self.showtip)
+            self.widget.bind("<Leave>", self.hidetip)
+
+        def showtip(self, event=None):
+            if self.tipwindow:
+                return
+            # Calculate position relative to the main window
+            x = self.widget.winfo_rootx() -100
+            y = self.widget.winfo_rooty() + 25
+            self.tipwindow = tw = tk.Toplevel(self.widget)
+            tw.wm_overrideredirect(True)  # Remove window decorations
+            tw.wm_geometry(f"+{x}+{y}")
+            self.ReverseToolTip_label = tk.Label(tw, text=self.text, bg=self.editor.BLACK, fg="#ffff00", font=("Consolas", 11, "italic"))
+            self.ReverseToolTip_label.pack()
+
+        def hidetip(self, event=None):
+            if self.tipwindow:
+                self.tipwindow.destroy()
+            self.tipwindow = None
+
     def __init__(self, root):
+        self.BLACK = 'black'
+        self.CYAN = 'cyan'
+
+
         self.output_queue = queue.Queue()
         self.root = root
         self.root.title("Python Editor")
         
         
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.root.config(bg="black")  # Add this line
+        self.root.config(bg=self.BLACK)  # Add this line
 
 
         # Colors
-        self.BG_COLOR = "black"
-        self.TEXT_COLOR = "cyan"
         self.ACCENT_COLOR = "#007acc"
         self.TERMINAL_BG = "#252526"
         self.TERMINAL_FG = "#ffffff"
         self.FOLDER_COLOR = "#ffcc00"
         self.FILE_COLOR = "#00ffcc"
         self.SELECTION_BORDER = "black"  # Add brown color constant
-
+        
 
         # Global Variables
         self.font_size = 14
@@ -215,8 +200,20 @@ class VSCodeLikeEditor:
         self.selection_anchor = None
         self.missing_module_check_timer = None
         self.import_check_timer = None
+        self.syntax_colors = {
+            "data_type": "#03f34a",
+            "keyword1": "#ff00ff",
+            "keyword2": "blue",
+            "non_data_type": self.CYAN,
+            "bracket": "yellow",
+            "number": "#970fed",
+            "string": "#c25507",
+            "import_text": "#05be1c",
+            "comment": "green",
+            "comment_bracket": "green"
+        }
         self.import_pattern = re.compile(
-            r"^(?:from\s+([\w.]+)\s+import|import\s+([\w., ]+))",
+            r"^(?:from\s+([\w.]+)\s+import|import\s+([\w., \n]+?(?=\s*as\s+\w+|\s*$)))",
             re.MULTILINE
         )
         
@@ -238,7 +235,7 @@ class VSCodeLikeEditor:
         self.window_icon_path = resource_path(r"icons\app_icon.ico")
         self.root.iconbitmap(self.window_icon_path)  
 
-        self.bg_img = Image.open(resource_path(r"icons\python_bg.png")).resize((350, 350))
+        self.bg_img = Image.open(resource_path(r"icons\python_bg.png")).resize((340, 340))
         self.file_explorer_img = Image.open(resource_path(r"icons\file_explorer.png")).resize((35, 40))
         self.search_img = Image.open(resource_path(r"icons\search.png")).resize((35, 40))
         self.toggle_folder_img = Image.open(resource_path(r"icons\Toggle_folders.png")).resize((35, 40))
@@ -262,6 +259,9 @@ class VSCodeLikeEditor:
         self.cpp_img = Image.open(resource_path(r"icons\cpp.png")).resize((17, 17))
         self.cserp_img = Image.open(resource_path(r"icons\cserp.png")).resize((17, 17))
 
+        self.dark_blue_img = Image.open(resource_path(r"icons\dark_blue_theme.png")).resize((27, 25))
+        self.black_img = Image.open(resource_path(r"icons\black_theme.png")).resize((30, 28))
+        self.dark_green_img = Image.open(resource_path(r"icons\dark_green_theme.png")).resize((26, 30))
 
 
         self.bg_photo = ImageTk.PhotoImage(self.bg_img)
@@ -288,13 +288,16 @@ class VSCodeLikeEditor:
         self.cpp_icon = ImageTk.PhotoImage(self.cpp_img)
         self.cserp_icon = ImageTk.PhotoImage(self.cserp_img)
 
-    def init_ui(self):
+        self.dark_blue_icon = ImageTk.PhotoImage(self.dark_blue_img)
+        self.black_icon = ImageTk.PhotoImage(self.black_img)
+        self.dark_green_icon = ImageTk.PhotoImage(self.dark_green_img)
 
-        
-        self.top_frame = tk.Frame(self.root, bg="black")
+    def init_ui(self):
+                
+        self.top_frame = tk.Frame(self.root, bg=self.BLACK)
         self.top_frame.pack(fill=tk.X, side="top")
 
-        self.filename_label = tk.Label(self.top_frame, text="", bg="black", fg="yellow",font=("Consolas", 14))
+        self.filename_label = tk.Label(self.top_frame, text="", bg=self.BLACK, fg="yellow",font=("Consolas", 14))
         self.filename_label.bind("<Button-1>", lambda e: self.focus_file_in_tree())
         self.filename_label.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
         self.filename_label.pack_forget()
@@ -303,12 +306,12 @@ class VSCodeLikeEditor:
         self.run_button = tk.Button(self.top_frame, 
                                     text=" ▶ ", 
                                     font=self.font_style,
-                                    activebackground='black', 
+                                    activebackground=self.BLACK, 
                                     command=self.run_code, 
                                     bg=self.ACCENT_COLOR, 
                                     fg="white")
         self.run_button.pack(side=tk.RIGHT, padx=5, pady=5)
-        ReverseToolTip(self.run_button, "Run Code (Alt+S)")
+        self.ReverseToolTip(self,self.run_button, "Run Code (Alt+S)")
 
         # Stop Button
         self.stop_button = tk.Button(self.top_frame,
@@ -316,17 +319,17 @@ class VSCodeLikeEditor:
                                             font=self.font_style,
                                             command=self.stop_code,
                                             bg="red",
-                                            activebackground='black', 
+                                            activebackground=self.BLACK, 
                                             fg="white")
         self.stop_button.pack(side=tk.RIGHT, padx=5, pady=5)
-        ReverseToolTip(self.stop_button, "Stop Code (Ctrl+Q)")
+        self.ReverseToolTip(self,self.stop_button, "Stop Code (Ctrl+Q)")
         self.stop_button.pack_forget()
 
        
         self.AI_search_entry = tk.Entry(
             self.top_frame,
             font=("Consolas", 14, 'italic'),
-            bg="black",
+            bg=self.BLACK,
             fg="white",
             insertbackground="white",
             border=0,
@@ -335,7 +338,7 @@ class VSCodeLikeEditor:
             relief="flat",
             highlightthickness=1,
             highlightcolor=self.ACCENT_COLOR,
-            highlightbackground="cyan"
+            highlightbackground=self.CYAN
         )
 
         self.AI_search_entry.place(relx=0.565, rely=0.5, anchor='center')  # Center in top frame
@@ -351,40 +354,40 @@ class VSCodeLikeEditor:
             self.top_frame,
             image=self.file_explorer_icon,
             command=self.toggle_sidebar,
-            bg='black',
-            activebackground='black',
+            bg=self.BLACK,
+            activebackground=self.BLACK,
             border=0,
             borderwidth=0
         )        
         self.file_explorer_toggle_btn.place(x=7, y=5, width=40, height=40)
-        ToolTip(self.file_explorer_toggle_btn, "File Explorer\n (Ctrl+Shift+E)")
+        self.ToolTip(self,self.file_explorer_toggle_btn, "File Explorer\n (Ctrl+Shift+E)")
 
         self.word_search_btn = tk.Button(
             self.top_frame,
             image=self.search_icon,
             command=self.open_search_bar,
-            bg='black',
-            activebackground='black',
+            bg=self.BLACK,
+            activebackground=self.BLACK,
             border=0,
             borderwidth=0
         )        
         self.word_search_btn.place(x=60, y=5, width=40, height=40)
-        ToolTip(self.word_search_btn, "Search for text\n in files (F3)")
+        self.ToolTip(self,self.word_search_btn, "Search for text\n in files (F3)")
 
         self.toggle_folder_btn= tk.Button(
             self.top_frame,
             image=self.toggle_folder_icon,
             command=self.toggle_all_folders,
-            bg='black',
-            activebackground='black',
+            bg=self.BLACK,
+            activebackground=self.BLACK,
             border=0,
             borderwidth=0
         )        
         self.toggle_folder_btn.place(x=120, y=5, width=40, height=40)
-        ToolTip(self.toggle_folder_btn, "Expand/Collapse\n All Folders (F6)")
+        self.ToolTip(self,self.toggle_folder_btn, "Expand/Collapse\n All Folders (F6)")
 
         # Main Pane
-        self.main_pane = tk.PanedWindow(self.root, orient=tk.HORIZONTAL, sashwidth=8, bg='cyan')
+        self.main_pane = tk.PanedWindow(self.root, orient=tk.HORIZONTAL, sashwidth=8, bg=self.CYAN)
         self.main_pane.pack(fill=tk.BOTH, expand=True)
 
         # Style Configuration
@@ -399,9 +402,9 @@ class VSCodeLikeEditor:
         self.style.theme_use('clam')
         self.style.configure("Treeview", 
                             font=("Consolas", 12),
-                            background=self.BG_COLOR, 
-                            fieldbackground=self.BG_COLOR, 
-                            foreground=self.TEXT_COLOR, 
+                            background=self.BLACK, 
+                            fieldbackground=self.BLACK, 
+                            foreground=self.CYAN, 
                             bordercolor="#654321",
                             borderwidth=2,
                             rowheight = 28,
@@ -409,12 +412,12 @@ class VSCodeLikeEditor:
                             )
         self.style.configure("Treeview.Heading",
                             font=("Consolas", 12),
-                            background='black', 
-                            foreground=self.TEXT_COLOR
+                            background=self.BLACK, 
+                            foreground=self.CYAN
                             )
         self.style.map("Treeview",
-                        background=[("selected", self.BG_COLOR)],
-                        foreground=[('selected', self.TEXT_COLOR)],
+                        background=[("selected", self.BLACK)],
+                        foreground=[('selected', self.CYAN)],
                         bordercolor=[('selected', '#654321')],  # Brown border for selection
                         relief=[('selected', 'solid')],
                         borderwidth=[('selected', 2)]  
@@ -428,22 +431,22 @@ class VSCodeLikeEditor:
                         )
         self.style.configure("Treeview.clipboard", 
                    background="#2d2d30", 
-                   foreground=self.TEXT_COLOR)
+                   foreground=self.CYAN)
         
         self.style.configure("Clipboard.Treeview", background="#2d2d30")
         self.style.map("Clipboard.Treeview",
             background=[('selected', '#2d2d30')],
-            foreground=[('selected', self.TEXT_COLOR)]
+            foreground=[('selected', self.CYAN)]
         )
 
-        self.style.configure("Vertical.TScrollbar", gripcount=0, background="black", troughcolor="black", borderwidth=0, width=8)
+        self.style.configure("Vertical.TScrollbar", gripcount=0, background=self.BLACK, troughcolor=self.BLACK, borderwidth=0, width=8)
         self.style.configure("Treeview.Folder", font=("Consolas", 12), foreground="orange")
-        self.style.configure("Treeview.File", font=("Consolas", 12), foreground="cyan")
-        self.style.configure("Custom.Treeview", background="black", foreground=self.TEXT_COLOR)
+        self.style.configure("Treeview.File", font=("Consolas", 12), foreground=self.CYAN)
+        self.style.configure("Custom.Treeview", background=self.BLACK, foreground=self.CYAN)
 
         # Folder Tree Frame
         self.folder_tree_frame = tk.Frame(self.main_pane,
-                                           bg="black", width=550,
+                                           bg=self.BLACK, width=550,
                                            highlightbackground=self.SELECTION_BORDER,
                                            highlightthickness=0
                                            )
@@ -454,25 +457,25 @@ class VSCodeLikeEditor:
         self.folder_tree_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=False)
         self.main_pane.paneconfig(self.folder_tree_frame, minsize=0)
         
-        self.button_frame = tk.Frame(self.folder_tree_frame, bg="black")
+        self.button_frame = tk.Frame(self.folder_tree_frame, bg=self.BLACK)
         self.button_frame.pack(fill=tk.X, side=tk.TOP, pady=5)
 
-        self.button_frame1 = tk.Frame(self.folder_tree_frame, bg="black")
+        self.button_frame1 = tk.Frame(self.folder_tree_frame, bg=self.BLACK)
         self.button_frame1.pack(fill=tk.X, side=tk.TOP, pady=5)
 
-        self.folder_name_label = tk.Label(self.button_frame, text="[❌] No Folder Opened", bg=self.BG_COLOR, fg='#ff0000', font=("Consolas", 15))
+        self.folder_name_label = tk.Label(self.button_frame, text="[❌] No Folder Opened", bg=self.BLACK, fg='#ff0000', font=("Consolas", 15))
         self.folder_name_label.pack(expand=True,fill=tk.BOTH, pady=5)
-        self.search_frame = tk.Frame(self.button_frame1, bg="black")
+        self.search_frame = tk.Frame(self.button_frame1, bg=self.BLACK)
         
         self.tree_search_entry = tk.Entry(
             self.search_frame,
             font=("Consolas", 14,'bold'),
-            bg="black",
+            bg=self.BLACK,
             fg="white",
             insertbackground="white",
             border=0,
             borderwidth=3,
-            highlightbackground="black",
+            highlightbackground=self.BLACK,
             justify='center'
         )
         self.tree_search_entry.insert(0, "Search")
@@ -488,25 +491,25 @@ class VSCodeLikeEditor:
             self.button_frame1,
             image=self.new_file_icon,  # Use the file icon
             command=self.make_file,
-            bg='black',
-            activebackground='black',
+            bg=self.BLACK,
+            activebackground=self.BLACK,
             border=0,
             borderwidth=0
         )
         
-        ToolTip(self.make_file_button, "Make File")
+        self.ToolTip(self,self.make_file_button, "Make File")
 
         self.make_folder_button = tk.Button(
             self.button_frame1,
             image=self.new_folder_icon,  # Use the folder icon
             command=self.make_folder,
-            bg='black',
-            activebackground='black',
+            bg=self.BLACK,
+            activebackground=self.BLACK,
             border=0,
             borderwidth=0
         )
         
-        ToolTip(self.make_folder_button, "Make Folder")
+        self.ToolTip(self,self.make_folder_button, "Make Folder")
 
         self.make_file_button.pack(side=tk.LEFT, padx=5, pady=0)
         self.make_folder_button.pack(side=tk.LEFT, padx=5, pady=5)
@@ -560,7 +563,7 @@ class VSCodeLikeEditor:
 
 
         # Vertical Pane
-        self.vertical_pane = tk.PanedWindow(self.main_pane, orient=tk.VERTICAL, sashwidth=8, bg='cyan')
+        self.vertical_pane = tk.PanedWindow(self.main_pane, orient=tk.VERTICAL, sashwidth=8, bg=self.CYAN)
         self.main_pane.add(self.vertical_pane, stretch="always")
 
         # Frame
@@ -568,47 +571,45 @@ class VSCodeLikeEditor:
         self.vertical_pane.add(self.frame, stretch="always")
 
         # Terminal Section (Resizable)
-        self.terminal_frame = tk.Frame(self.vertical_pane, bg="black")
+        self.terminal_frame = tk.Frame(self.vertical_pane, bg=self.BLACK)
         self.vertical_pane.add(self.terminal_frame, height=270,stretch = "never")
 
         # Close Button Frame
-        self.close_button_frame = tk.Frame(self.terminal_frame, bg="black")
+        self.close_button_frame = tk.Frame(self.terminal_frame, bg=self.BLACK)
         self.close_button_frame.pack(side=tk.TOP, fill=tk.X)
 
         # Close Button
         self.close_button = tk.Button(
             self.close_button_frame,
             image=self.terminal_close_icon, 
-            bg='black', 
+            bg=self.BLACK, 
             activebackground='red',
-            activeforeground='black',
+            activeforeground=self.BLACK,
             border=0,
             borderwidth=0,
             command=lambda: self.vertical_pane.forget(self.terminal_frame)  # Hide the terminal
         )
         self.close_button.pack(side=tk.RIGHT, padx=10, pady=0)
-        ReverseToolTip(self.close_button, "Hide Terminal")
+        self.ReverseToolTip(self,self.close_button, "Hide Terminal")
         
         self.terminal_delete_button = tk.Button(
             self.close_button_frame,
             image=self.terminal_delete_icon, 
-            bg='black', 
+            bg=self.BLACK, 
             activebackground='red',
             border=0,
             borderwidth=0,
             command=lambda e=None: [self.vertical_pane.forget(self.terminal_frame), self.stop_code(),self.terminal_delete_clear()]
         )
         self.terminal_delete_button.pack(side=tk.RIGHT, padx=2, pady=0)
-        ReverseToolTip(self.terminal_delete_button, "Kill Terminal")
-
-
+        self.ReverseToolTip(self,self.terminal_delete_button, "Kill Terminal")
         
 
         # Editor Frame
-        self.editor_frame = tk.Frame(self.frame, bg=self.BG_COLOR)
+        self.editor_frame = tk.Frame(self.frame, bg=self.BLACK)
         self.editor_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.file_tab_canvas = tk.Canvas(self.editor_frame, bg="black", height=30, highlightthickness=1,highlightcolor='cyan',highlightbackground='cyan')
+        self.file_tab_canvas = tk.Canvas(self.editor_frame, bg=self.BLACK, height=30, highlightthickness=1,highlightcolor=self.CYAN,highlightbackground=self.CYAN)
         self.file_tab_canvas.pack(side=tk.TOP, fill=tk.X)
 
         self.canvas_scrollbar = ttk.Scrollbar(self.editor_frame, orient="horizontal",
@@ -616,7 +617,7 @@ class VSCodeLikeEditor:
         self.canvas_scrollbar.pack(side=tk.TOP, fill=tk.X)
         self.file_tab_canvas.configure(xscrollcommand=self.canvas_scrollbar.set)
 
-        self.tab_frame = tk.Frame(self.file_tab_canvas, bg="black")
+        self.tab_frame = tk.Frame(self.file_tab_canvas, bg=self.BLACK)
         self.file_tab_canvas.create_window((0,0), window=self.tab_frame, anchor="nw")
         self.canvas_scrollbar.pack_forget()
 
@@ -628,7 +629,7 @@ class VSCodeLikeEditor:
         self.editor_content.pack(fill=tk.BOTH, expand=True)
 
         # Line Numbers
-        self.line_numbers = tk.Text(self.editor_content, width=4, padx=5, bg="black", fg="#7bdc5e", state=tk.DISABLED, font=("Consolas", self.font_size))
+        self.line_numbers = tk.Text(self.editor_content, width=4, padx=5, bg=self.BLACK, fg="#7bdc5e", state=tk.DISABLED, font=("Consolas", self.font_size))
         self.line_numbers.pack(side=tk.LEFT, fill=tk.Y)
         self.line_numbers.bind("<MouseWheel>", self.on_mouse_wheel)
         self.line_numbers.config(yscrollcommand=self.sync_scroll)
@@ -638,12 +639,12 @@ class VSCodeLikeEditor:
         self.style.configure(
             "Vertical.TScrollbar",
             gripcount=0,
-            background="cyan", # cyan
-            darkcolor="black",
-            lightcolor="black",
-            troughcolor="black", # black
-            bordercolor="black", # black
-            arrowcolor="black", # black
+            background=self.CYAN, # cyan
+            darkcolor=self.BLACK,
+            lightcolor=self.BLACK,
+            troughcolor=self.BLACK, # black
+            bordercolor=self.BLACK, # black
+            arrowcolor=self.BLACK, # black
             relief="flat",
             width=5  # Make it slightly thicker
         )
@@ -651,18 +652,18 @@ class VSCodeLikeEditor:
         self.style.map(
             "Vertical.TScrollbar",
             background=[('active', 'magenta')], # cyan
-            arrowcolor=[('active', 'cyan')]
+            arrowcolor=[('active', self.CYAN)]
         )
         
         self.style.configure(
             "Horizontal.TScrollbar",
             gripcount=0,
-            background="cyan", # cyan
-            darkcolor="black",
-            lightcolor="black",
-            troughcolor="black", # black
-            bordercolor="black", # black
-            arrowcolor="black", # black
+            background=self.CYAN, # cyan
+            darkcolor=self.BLACK,
+            lightcolor=self.BLACK,
+            troughcolor=self.BLACK, # black
+            bordercolor=self.BLACK, # black
+            arrowcolor=self.BLACK, # black
             relief="flat",
             width=5  # Make it slightly thicker
         )
@@ -670,7 +671,7 @@ class VSCodeLikeEditor:
         self.style.map(
             "Horizontal.TScrollbar",
             background=[('active', 'magenta')], # cyan
-            arrowcolor=[('active', 'cyan')]
+            arrowcolor=[('active', self.CYAN)]
         )
 
         # Code Scrollbar
@@ -683,7 +684,7 @@ class VSCodeLikeEditor:
         
         # Main Code Editor
         self.code_editor = tk.Text(
-            self.editor_content, wrap=tk.NONE, undo=True, font=self.font_style, background="black", foreground="white",
+            self.editor_content, wrap=tk.NONE, undo=True, font=self.font_style, background=self.BLACK, foreground="white",
             insertbackground="white", yscrollcommand=lambda *args: (self.scrollbar.set(*args), self.sync_scroll(*args)),
         )
         self.code_editor.tag_configure("missing_module", underline=True, underlinefg="red", foreground="red")
@@ -702,7 +703,7 @@ class VSCodeLikeEditor:
         self.code_editor.config(xscrollcommand=self.horizontal_scrollbar.set)
         self.horizontal_scrollbar.config(command=lambda *args: self.code_editor.xview(*args))
         
-        self.bg_label = tk.Label(self.code_editor, image=self.bg_photo, bg="black")
+        self.bg_label = tk.Label(self.code_editor, image=self.bg_photo, bg=self.BLACK)
         self.bg_label.place(relx=0.5, rely=0.5, anchor='center')
         self.bg_label.bind("<Button-1>", lambda e: self.code_editor.focus_set())
         self.code_editor.bind("<Control-s>", self.save_file)
@@ -712,7 +713,7 @@ class VSCodeLikeEditor:
         self.code_editor.config(undo=True, maxundo=1000)
 
         
-        self.suggestion_box = tk.Listbox(self.editor_content, bg="black", fg="white", font=("Consolas", 14), height=6)
+        self.suggestion_box = tk.Listbox(self.editor_content, bg=self.BLACK, fg="white", font=("Consolas", 14), height=6)
         self.suggestion_box.bind("<Return>", self.insert_suggestion)
         self.suggestion_box.bind("<<ListboxSelect>>", self.insert_suggestion)
         self.suggestion_box.bind("<Up>", self.navigate_suggestions)
@@ -721,8 +722,8 @@ class VSCodeLikeEditor:
 
         
         # Main Terminal
-        self.terminal = tk.Text(self.terminal_frame, state="disabled", height=50, wrap=tk.WORD, font=("Consolas", 12), bg="black", fg="red")
-        self.terminal_label = tk.Label(self.close_button_frame, text="T E R M I N A L", fg="white", bg="black", font=("Arial", 15, 'bold'))
+        self.terminal = tk.Text(self.terminal_frame, state="disabled", height=50, wrap=tk.WORD, font=("Consolas", 12), bg=self.BLACK, fg="red")
+        self.terminal_label = tk.Label(self.close_button_frame, text="T E R M I N A L", fg="white", bg=self.BLACK, font=("Arial", 15, 'bold'))
         self.terminal_label.pack(fill="x", pady=0)
         self.terminal.pack(fill=tk.BOTH, expand=True)
         self.terminal.config(state="disabled")
@@ -736,6 +737,7 @@ class VSCodeLikeEditor:
         self.terminal_input = tk.Entry(self.terminal_frame, bg=self.TERMINAL_BG, fg=self.TERMINAL_FG, insertbackground="white", font=("Consolas", 14))
         self.terminal_input.pack(fill="x", padx=5, pady=5, ipady=5)
         self.terminal_input.bind("<Return>", self.execute_command)
+        
 
         # Terminal Scrollbar
         self.terminal_scrollbar = ttk.Scrollbar(self.terminal, orient=tk.VERTICAL, command=self.terminal.yview, cursor='arrow')
@@ -744,63 +746,76 @@ class VSCodeLikeEditor:
 
         # Placeholder Item
         self.placeholder_item = self.file_tree.insert("", "end", text="", tags=("placeholder",))
-        self.file_tree.tag_configure("placeholder", foreground="black", background='black')
+        self.file_tree.tag_configure("placeholder", foreground=self.BLACK, background=self.BLACK)
 
         # Menu Bar
-        self.menu_bar = tk.Menu(self.root, background='black')
+        self.menu_bar = tk.Menu(self.root, background=self.BLACK)
         self.root.config(menu=self.menu_bar)
 
         # File Menu
-        self.file_menu = tk.Menu(self.menu_bar, tearoff=0, background='cyan')
-        self.file_menu.add_command(label="Open File      Ctrl+O", font=self.menu_bar_font_style, background='black', foreground='white', command=self.open_file)
-        self.file_menu.add_command(label="Open Folder    Ctrl+Shift+O", font=self.menu_bar_font_style, background='black', foreground='white', command=self.open_folder)
+        self.file_menu = tk.Menu(self.menu_bar, tearoff=0, background=self.CYAN)
+        self.file_menu.add_command(label="Open File",accelerator='Ctrl+O', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.open_file)
+        self.file_menu.add_command(label="Open Folder",accelerator="Ctrl+Shift+O", font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.open_folder)
         self.file_menu.add_separator()
-        self.file_menu.add_command(label="Save           Ctrl+S", font=self.menu_bar_font_style, background='black', foreground='white', command=self.save_file)
-        self.file_menu.add_command(label="Save As        Ctrl+Shift+S", font=self.menu_bar_font_style, background='black', foreground='white', command=self.save_as_file)
+        self.file_menu.add_command(label="Save",accelerator="Ctrl+S", font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.save_file)
+        self.file_menu.add_command(label="Save As",accelerator="Ctrl+Shift+S", font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.save_as_file)
         self.file_menu.add_separator()
-        self.file_menu.add_command(label="Exit", font=self.menu_bar_font_style, background='black', foreground='red', command=self.exit_editor)
+        self.file_menu.add_command(label="Exit", font=self.menu_bar_font_style, background=self.BLACK, foreground='red', command=self.exit_editor)
 
         # Edit Menu
-        self.edit_menu = tk.Menu(self.menu_bar, tearoff=0, bg='cyan')
-        self.edit_menu.add_command(label="Undo       Ctrl+Z", font=self.menu_bar_font_style, background='black', foreground='white', command=self.safe_undo)
-        self.edit_menu.add_command(label="Redo       Ctrl+Y", font=self.menu_bar_font_style, background='black', foreground='white', command=self.safe_redo)
+        self.edit_menu = tk.Menu(self.menu_bar, tearoff=0, bg=self.CYAN)
+        self.edit_menu.add_command(label="Undo",accelerator='Ctrl+Z', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.safe_undo)
+        self.edit_menu.add_command(label="Redo",accelerator='Ctrl+Y', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.safe_redo)
         self.edit_menu.add_separator()
-        self.edit_menu.add_command(label="Cut        Ctrl+X", font=self.menu_bar_font_style, background='black', foreground='white', command=self.cut_text)
-        self.edit_menu.add_command(label="Copy       Ctrl+C", font=self.menu_bar_font_style, background='black', foreground='white', command=self.copy_text)
-        self.edit_menu.add_command(label="Paste      Ctrl+V", font=self.menu_bar_font_style, background='black', foreground='white', command=self.paste_text)
+        self.edit_menu.add_command(label="Cut",accelerator='Ctrl+X', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.cut_text)
+        self.edit_menu.add_command(label="Copy",accelerator='Ctrl+C', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.copy_text)
+        self.edit_menu.add_command(label="Paste",accelerator='Ctrl+V', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.paste_text)
         self.edit_menu.add_separator()
-        self.edit_menu.add_command(label="Rename     F2", font=self.menu_bar_font_style, background='black', foreground='white', command=self.start_rename_via_shortcut)
-        self.edit_menu.add_command(label="Search     F3", font=self.menu_bar_font_style, background='black', foreground='white', command=self.open_search_bar)
+        self.edit_menu.add_command(label="Rename",accelerator='F2', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.start_rename_via_shortcut)
+        self.edit_menu.add_command(label="Search",accelerator='F3', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.open_search_bar)
         self.edit_menu.add_separator()
-        self.edit_menu.add_command(label="Zoom In    Ctrl++", font=self.menu_bar_font_style, background='black', foreground='white', command=self.increase_text_size)
-        self.edit_menu.add_command(label="Zoom Out   Ctrl+-", font=self.menu_bar_font_style, background='black', foreground='white', command=self.decrease_text_size)
+        self.edit_menu.add_command(label="Zoom In",accelerator='Ctrl++', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.increase_text_size)
+        self.edit_menu.add_command(label="Zoom Out",accelerator=' Ctrl+-', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.decrease_text_size)
 
 
         # Run Menu
-        self.run_menu = tk.Menu(self.menu_bar, tearoff=0,bg='cyan')
-        self.run_menu.add_command(label="Run                     Alt+S", font=self.menu_bar_font_style, background='black', foreground='white', command=self.run_code)
-        self.run_menu.add_command(label="Stop Running...         Ctrl+Q", font=self.menu_bar_font_style, background='red', foreground='white', command=self.stop_code)
+        self.run_menu = tk.Menu(self.menu_bar, tearoff=0,bg=self.CYAN)
+        self.run_menu.add_command(label="Run",accelerator='Alt+S', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.run_code)
+        self.run_menu.add_separator()
+        self.run_menu.add_command(label="Stop Running... ",accelerator='Ctrl+Q', font=self.menu_bar_font_style, background='red', foreground='white', command=self.stop_code)
 
         
         # terminal menu
-        self.terminal_menu = tk.Menu(self.menu_bar,tearoff=0,bg='cyan')
-        self.terminal_menu.add_command(label="Show Terminal         Ctrl+Shift+T", font=self.menu_bar_font_style, background='black', foreground='white', command=self.reopen_terminal)
-        self.terminal_menu.add_command(label="Clear Terminal        Ctrl+Shift+C", font=self.menu_bar_font_style, background='black', foreground='white', command=self.terminal_delete_clear)
+        self.terminal_menu = tk.Menu(self.menu_bar,tearoff=0,bg=self.CYAN)
+        self.terminal_menu.add_command(label="Show Terminal     ",accelerator='Ctrl+Shift+T', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.reopen_terminal)
+        self.terminal_menu.add_command(label="Clear Terminal    ",accelerator='Ctrl+Shift+C', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.terminal_delete_clear)
         self.terminal_menu.add_separator()
-        self.terminal_menu.add_command(label="New Terminal          Ctrl+Shift+`", font=self.menu_bar_font_style, background='black', foreground='white', command=self.open_new_terminal)
+        self.terminal_menu.add_command(label="New Terminal      ",accelerator='Ctrl+Shift+`', font=self.menu_bar_font_style, background=self.BLACK, foreground='white', command=self.open_new_terminal)
 
+
+        # Theme Menu
+        self.theme_menu = tk.Menu(self.menu_bar,tearoff=0,bg='black', foreground='white',font=self.menu_bar_font_style)
+        self.theme_menu.add_command(label="Dark Blue    ",image=self.dark_blue_icon, compound='right',command=self.change_blue_theme)
+        self.theme_menu.add_separator()
+        self.theme_menu.add_command(label="Black        ",image=self.black_icon, compound='right',command=self.change_dark_theme)
+        self.theme_menu.add_separator()
+        self.theme_menu.add_command(label="Dark Green   ",image=self.dark_green_icon, compound='right',command=self.change_dark_green_theme)
+        self.theme_menu.add_separator()
 
 
         # Menu Bar
         self.custom_menu_font = ("Consolas", 12)
-        self.menu_bar.add_cascade(label="File", font=self.custom_menu_font, background='black', foreground='white', menu=self.file_menu)
-        self.menu_bar.add_cascade(label="Edit", font=self.custom_menu_font, background='black', foreground='white', menu=self.edit_menu)
-        self.menu_bar.add_cascade(label="Run", font=self.custom_menu_font, background='black', foreground='white', menu=self.run_menu)
-        self.menu_bar.add_cascade(label="Terminal", font=self.custom_menu_font, background='black', foreground='white', menu=self.terminal_menu)
+        self.menu_bar.add_cascade(label="File", font=self.custom_menu_font, background=self.BLACK, foreground='white', menu=self.file_menu)
+        self.menu_bar.add_cascade(label="Edit", font=self.custom_menu_font, background=self.BLACK, foreground='white', menu=self.edit_menu)
+        self.menu_bar.add_cascade(label="Run", font=self.custom_menu_font, background=self.BLACK, foreground='white', menu=self.run_menu)
+        self.menu_bar.add_cascade(label="Terminal", font=self.custom_menu_font, background=self.BLACK, foreground='white', menu=self.terminal_menu)
+        self.menu_bar.add_cascade(label="Theme", font=self.custom_menu_font, background=self.BLACK, foreground='white', menu=self.theme_menu)
+     
 
-        # Bindings
+
+
+        # Bindings for code editor
         self.code_editor.bind("<KeyRelease>", lambda e: (self.update_line_numbers(), self.show_suggestions(e), self.on_text_change(e)))
-        
         self.code_editor.bind("<KeyPress>", self.on_key_press)
         self.code_editor.bind("<Return>", self.update_line_numbers, add="+")
         self.code_editor.bind("<BackSpace>", self.update_line_numbers, add="+")
@@ -856,9 +871,7 @@ class VSCodeLikeEditor:
         self.code_editor.bind("<Button-1>", self.handle_mouse_click)
         self.code_editor.after(1, self._highlight_syntax)
 
-
-
-
+        
 
         # Keyboard Shortcuts
         self.root.bind("<Control-o>", self.open_file)
@@ -901,7 +914,7 @@ class VSCodeLikeEditor:
         self.root.bind("<Control-Shift-c>", self.terminal_delete_clear)
         self.root.bind("<Control-Shift-C>", self.terminal_delete_clear)
         self.root.bind("<Control-Shift-asciitilde>", self.open_new_terminal)
-        
+    
     def on_close(self):
         self.save_window_geometry()
         self.stop_code()
@@ -944,6 +957,8 @@ class VSCodeLikeEditor:
                 state = config["Geometry"].get("state", "normal")
                 if geometry:
                     self.root.geometry(geometry)
+                    self.root.update_idletasks()
+                    self.root.update()
                 if state == "zoomed":
                     self.root.state("zoomed")  # Restore maximized state
                 elif state == "iconic":
@@ -1013,6 +1028,10 @@ class VSCodeLikeEditor:
                 continue
             
     def load_file(self, filepath):
+        if not os.path.exists(filepath):
+            self.terminal_output(f"[✖] File not found: {os.path.basename(filepath)}\n", error=True)
+            self.close_tab(filepath)  # Close the invalid tab
+            return
         self.current_file = filepath
         self.filename_label.config(text=os.path.basename(filepath))
         self.add_file_tab(filepath)  
@@ -1027,9 +1046,6 @@ class VSCodeLikeEditor:
         except UnicodeDecodeError:
             self.terminal_output(f"[✖] Cannot open '{os.path.basename(filepath)}'...\n", error=True)
 
-    def custom_showerror(self, title, message):
-        CustomMessageBox(self.root, title, message)
-
     def save_file(self, event=None):
         if self.current_file:
             with open(self.current_file, "w", encoding="utf-8") as file:
@@ -1038,6 +1054,8 @@ class VSCodeLikeEditor:
 
         else:
             self.save_as_file()
+        
+        return 'break'
 
     def save_as_file(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".py", filetypes=[("Python Files", "*.py"), ("All Files", "*.*")])
@@ -1176,13 +1194,7 @@ class VSCodeLikeEditor:
         datatypes = {"str", "int", "float", "bool", "list", "tuple", "dict", "set", "complex", "bytes", "range", "enumerate"}
         keywords1 = {"for", "while", "if", "else", "elif", "try", "except", "finally", "break", "continue", "return", "import", "from", "as", "with", 'input', "lambda", "yield", "global", "nonlocal", "pass", "raise", 'do'}
         keywords2 = {"and", "or", "not", "is", "in", "def", 'print', "class", 'True', 'False', 'None', 'NOTE'}
-        COLORS = {
-            "data_type": "#03f34a",
-            "keyword1": "#ff00ff",
-            "keyword2": "blue",
-            "non_data_type": "cyan",
-            "bracket": "yellow"
-        }
+        COLORS = self.syntax_colors
 
         # Remove previous tags only in the visible region
         tags_to_remove = [
@@ -1295,12 +1307,12 @@ class VSCodeLikeEditor:
                     if char in "(){}[]":
                         bracket_idx = f"{line_num}.{idx}"
                         self.code_editor.tag_add("comment_bracket", bracket_idx, f"{bracket_idx}+1c")
-        self.code_editor.tag_config("comment", foreground="green")
-        self.code_editor.tag_config("comment_bracket", foreground="green")
+        self.code_editor.tag_config("comment", foreground=self.syntax_colors["comment"])
+        self.code_editor.tag_config("comment_bracket", foreground=self.syntax_colors["comment_bracket"])
 
 
         # brackets
-        bracket_colors = ["yellow", "violet", "cyan", "#1d00e4", "orange", "magenta"]
+        bracket_colors = ["yellow", "violet", self.CYAN, "#1d00e4", "orange", "magenta"]
         # Configure each bracket color tag
         for color in bracket_colors:
             self.code_editor.tag_configure(color, foreground=color)
@@ -1361,6 +1373,7 @@ class VSCodeLikeEditor:
         content = self.code_editor.get("1.0", "end-1c").strip()
         if content == "":
             self.bg_label.place(relx=0.5, rely=0.5, anchor='center')
+        
         else:
             self.bg_label.place_forget()
         
@@ -1375,27 +1388,10 @@ class VSCodeLikeEditor:
         if hasattr(self, 'search_window') and self.search_window.winfo_exists():
             if self.text_search_entry.get().strip() != "Search":
                 self.real_time_search()
-
-    def apply_color(self, index, color):
-        line, column = self.get_line_column(index)
-        tag_name = f"bracket_{line}_{column}"
-
-        self.code_editor.tag_add(tag_name, f"{line}.{column}", f"{line}.{column + 1}")
-        self.code_editor.tag_config(tag_name, foreground=color)
-
+    
     def get_line_column(self, index):
         line = self.code_editor.index(f"1.0+{index}c").split(".")
         return int(line[0]), int(line[1])
-
-    def highlight_word_dots(self, word, start_idx):
-        """Highlight only letters in a word while keeping dots (.) default color."""
-        idx = start_idx
-        for char in word:
-            if char != ".":  # Only color non-dot characters
-                start_index = f"1.0+{idx}c"
-                end_index = f"1.0+{idx + 1}c"
-                self.code_editor.tag_add("import_text", start_index, end_index)
-            idx += 1
 
     def safe_undo(self, event=None):
         if not self.undo_stack:
@@ -1413,7 +1409,8 @@ class VSCodeLikeEditor:
                 else:
                     os.remove(path)
             except Exception as e:
-                self.custom_showerror("Undo Error", f"Couldn't delete {path}")
+                self.terminal_output(f"Couldn't delete {path}\n", error=True)
+                pass
             self.update_file_tree(self.folder_path)
             
         elif action['type'] == 'delete':
@@ -1423,7 +1420,7 @@ class VSCodeLikeEditor:
                     shutil.move(entry['backup_path'], entry['original_path'])
                 shutil.rmtree(action['backup_dir'])
             except Exception as e:
-                self.custom_showerror("Undo Error", str(e))
+                self.terminal_output(f"Undo Error - {str(e)}\n",error= True)
             self.update_file_tree(self.folder_path)
     
     def safe_redo(self, event=None):
@@ -1442,7 +1439,7 @@ class VSCodeLikeEditor:
                     with open(action['path'], 'w') as f:
                         f.write('')
             except Exception as e:
-                self.custom_showerror("Redo Error", str(e))
+                self.terminal_output(f"Redo Error- {str(e)}\n",error=True)
             self.update_file_tree(self.folder_path)
             
         elif action['type'] == 'delete':
@@ -1463,7 +1460,8 @@ class VSCodeLikeEditor:
                     'backup_dir': backup_root
                 })
             except Exception as e:
-                self.custom_showerror("Redo Error", str(e))
+                self.terminal_output(f"Redo Erro - {str(e)}\n",error= True)
+                pass
             self.update_file_tree(self.folder_path)
 
     def on_key_press(self, event):
@@ -1538,39 +1536,57 @@ class VSCodeLikeEditor:
     def toggle_comment(self, event=None):
         # Check if there is a selection
         if self.code_editor.tag_ranges("sel"):
-            # Get the start and end of the selection
-            start_index = self.code_editor.index("sel.first linestart")  # Start of first selected line
-            end_index = self.code_editor.index("sel.last lineend")  # End of last selected line
+            start_index = self.code_editor.index("sel.first")
+            end_index = self.code_editor.index("sel.last")
         else:
-            # If no selection, operate on the current line
-            start_index = self.code_editor.index("insert linestart")  # Current line start
-            end_index = self.code_editor.index("insert lineend")  # Current line end
+            start_index = self.code_editor.index("insert linestart")
+            end_index = self.code_editor.index("insert lineend")
 
-        # Get the selected lines
-        content = self.code_editor.get(start_index, end_index)
-        lines = content.split("\n")
+        # Determine start and end lines
+        start_line = int(start_index.split('.')[0])
+        end_line = int(end_index.split('.')[0])
 
-        # Check if all lines are commented
-        all_commented = all(line.strip().startswith("#") for line in lines if line.strip())
+        # Check if all selected lines are commented
+        all_commented = True
+        for line_num in range(start_line, end_line + 1):
+            line_start = f"{line_num}.0"
+            line_end = f"{line_num}.end"
+            line_content = self.code_editor.get(line_start, line_end).lstrip()
+            if line_content and not line_content.startswith(('# ', '#')):
+                all_commented = False
+                break
 
-        # Toggle comment for each line
-        for i in range(len(lines)):
-            if lines[i].strip():  # Ignore empty lines
+        # Toggle comments for each line
+        for line_num in range(start_line, end_line + 1):
+            line_start = f"{line_num}.0"
+            line_end = f"{line_num}.end"
+            line_content = self.code_editor.get(line_start, line_end)
+            indentation = len(line_content) - len(line_content.lstrip())
+            content_part = line_content[indentation:]
+
+            if line_content.strip():
                 if all_commented:
-                    # Uncomment: Remove the first '#' and preserve the indentation
-                    lines[i] = lines[i].replace("#", "", 1)
+                    # Uncomment
+                    if content_part.startswith("# "):
+                        new_line = line_content[:indentation] + content_part[2:]
+                    elif content_part.startswith("#"):
+                        new_line = line_content[:indentation] + content_part[1:]
+                    else:
+                        new_line = line_content
                 else:
-                    # Comment: Add '#' after the indentation
-                    indentation = len(lines[i]) - len(lines[i].lstrip())
-                    lines[i] = lines[i][:indentation] + "#" + lines[i][indentation:]
+                    # Comment
+                    new_line = line_content[:indentation] + "# " + line_content[indentation:]
+            else:
+                new_line = line_content  # Empty line
 
-        # Replace text with modified lines
-        self.code_editor.delete(start_index, end_index)
-        self.code_editor.insert(start_index, "\n".join(lines))
+            # Replace the line
+            self.code_editor.delete(line_start, line_end)
+            self.code_editor.insert(line_start, new_line)
 
-        # Restore the selection
-        self.code_editor.tag_add("sel", start_index, end_index)
-
+        # Re-apply the original selection if it existed
+        if self.code_editor.tag_ranges("sel"):
+            self.code_editor.tag_add("sel", start_index, end_index)
+        
         return "break"
 
     def deselect_and_move_cursor(self, event):
@@ -1758,6 +1774,8 @@ class VSCodeLikeEditor:
         self.root.config(cursor="")
 
     def update_file_tree(self, path, parent="",restore_expanded=True):
+        if not path:
+            return
         expanded_paths = self.get_expanded_paths() if restore_expanded else set()
 
         if parent == "":
@@ -1891,6 +1909,8 @@ class VSCodeLikeEditor:
             return 'break'
 
         self.terminal_output(f">>> {command}\n", error=False)
+        self.run_button.pack_forget()
+        self.stop_button.pack(side=tk.RIGHT, padx=5, pady=5)
 
         # Working Directory Logic
         if self.folder_path and os.path.exists(self.folder_path):
@@ -1912,7 +1932,6 @@ class VSCodeLikeEditor:
                 bufsize=1,
                 cwd=working_directory, 
                 startupinfo=startupinfo,
-                # universal_newlines=True,
                 creationflags=subprocess.CREATE_NO_WINDOW 
             )
             self.active_processes.append(self.process)  
@@ -1973,6 +1992,7 @@ class VSCodeLikeEditor:
             folder_name = os.path.basename(path)
             self.folder_name_label.config(text=self.truncate_folder_name(folder_name), 
                                         fg='#ffff00', font=self.font_style)
+            self.folder_name_label.config(font='bold')
             self.start_file_monitor()
             self.root.focus_set()
 
@@ -2291,41 +2311,6 @@ class VSCodeLikeEditor:
 
         return None  # Allow normal paste behavior
 
-    def on_arrow_key(self, event):
-
-        global last_col_position
-
-        cursor_pos = self.code_editor.index(tk.INSERT)
-        line, col = map(int, cursor_pos.split("."))
-
-        if event.keysym == "Up":
-            new_line = line - 1
-            self.update_line_numbers()
-        elif event.keysym == "Down":
-            new_line = line + 1
-            self.update_line_numbers()
-        else:
-            return "break"
-
-        # Store last column position for the current line
-        self.last_col_position[line] = col
-
-        # Get the preferred column for the new line
-        preferred_col = self.last_col_position.get(new_line, col)
-
-        # Get text of the new line
-        new_line_text = self.code_editor.get(f"{new_line}.0", f"{new_line}.end")
-        max_col = len(new_line_text)
-
-        # Ensure cursor doesn't go beyond available text
-        new_col = min(preferred_col, max_col)
-
-        # Move cursor to the new position
-        self.code_editor.mark_set(tk.INSERT, f"{new_line}.{new_col}")
-        self.code_editor.see(tk.INSERT)  # Ensure visibility
-
-        return "break"
-
     def delete_word(self, event):
         """Deletes the previous word or special character when Ctrl+Backspace is pressed and updates line numbers."""
         cursor_pos = self.code_editor.index(tk.INSERT)
@@ -2565,7 +2550,7 @@ class VSCodeLikeEditor:
 
     def make_file(self):
         if not self.folder_path:
-            self.custom_showerror("Error", " [✖] No folder is opened.\n Please open a folder first.")
+            self.terminal_output(" [✖] No folder is opened.\n Please open a folder first.\n", error=True)
             return
 
         try:
@@ -2593,13 +2578,13 @@ class VSCodeLikeEditor:
                 return
 
             if not re.match(r'^[\w\-. ]+$', file_name):
-                self.custom_showerror("Error", " [✖] Invalid file name. Use only letters, numbers, and .-_")
+                self.terminal_output(f" [✖] Invalid file name. Use only letters, numbers, and .-_\n", error=True )
                 return
 
             file_path = os.path.normpath(os.path.join(parent_folder, file_name))
 
             if os.path.exists(file_path):
-                self.custom_showerror("Error", f"[✖] '{file_name}' already exists in this location.")
+                self.terminal_output(f"[✖] '{file_name}' already exists in this location.\n", error= True)
                 return
 
             with open(file_path, "w") as f:
@@ -2615,7 +2600,7 @@ class VSCodeLikeEditor:
                 self.file_tree.see(new_item)
 
         except Exception as e:
-            self.custom_showerror("Error", f"[X] Failed to create file: {str(e)}")
+            self.terminal_output(f"[X] Failed to create file: {str(e)}\n", error=True)
 
         if file_path:
             # ... file creation logic ...
@@ -2641,13 +2626,13 @@ class VSCodeLikeEditor:
         return None
 
     def custom_askstring(self, title, prompt):
-        dialog = CustomInputDialog(self.root, title, prompt)
+        dialog = self.CustomInputDialog(self,self.root, title, prompt)
         return dialog.show()
 
     def make_folder(self):
         """Create new folder in current directory structure with validation"""
         if not self.folder_path:
-            self.custom_showerror("Error", "[✖] No folder opened.\nPlease open a folder first.")
+            self.terminal_output("[✖] No folder opened.\nPlease open a folder first.\n", error=True)
             return
 
         try:
@@ -2675,9 +2660,8 @@ class VSCodeLikeEditor:
 
             # Validate folder name
             if not re.match(r'^[^<>:"/\\|?*]{1,255}$', folder_name):
-                self.custom_showerror("Error", 
-                    "[✖] Invalid folder name.\n"
-                    "Cannot contain: <>:\"/\\|?* or be empty")
+                self.terminal_output("[✖] Invalid folder name.\n"
+                    "Cannot contain: <>:\"/\\|?* or be empty\n",error=True)
                 return
 
             # Create normalized path
@@ -2685,8 +2669,7 @@ class VSCodeLikeEditor:
 
             # Check if folder exists
             if os.path.exists(folder_path):
-                self.custom_showerror("Error", 
-                    f"[✖] '{folder_name}' already exists in this location.")
+                self.terminal_output(f"[✖] '{folder_name}' already exists in this location.\n",error=True)
                 return
 
             # Attempt to create folder
@@ -2703,14 +2686,11 @@ class VSCodeLikeEditor:
                 self.file_tree.see(new_item)
 
         except FileExistsError:
-            self.custom_showerror("Error", 
-                f"[✖] Folder '{folder_name}' was created by another process.")
+            self.terminal_output(f"[✖] Folder '{folder_name}' was created by another process.\n",error=True)
         except OSError as e:
-            self.custom_showerror("OS Error", 
-                f"[✖] Failed to create folder:\n{str(e)}")
+            self.terminal_output(f"[✖] Failed to create folder:\n{str(e)}\n", error=True)
         except Exception as e:
-            self.custom_showerror("Unexpected Error", 
-                f"[✖] Unexpected error creating folder:\n{str(e)}")
+            self.terminal_output(f"[✖] Unexpected error creating folder:\n{str(e)}\n",error=True)
         
         if folder_path:
             # ... folder creation logic ...
@@ -2802,13 +2782,13 @@ class VSCodeLikeEditor:
         text = self.file_tree.item(item, "text").strip()
 
         if text == "(Empty Folder)":
-            self.custom_showerror("Error", "[X] Cannot rename '(Empty Folder)' placeholder.")
+            self.terminal_output("[X] Cannot rename '(Empty Folder)' placeholder.\n",error=True)
             return
         
         values = self.file_tree.item(item, "values")
 
         if not values:
-            self.custom_showerror("Error", "[✖] Cannot rename this item")
+            self.terminal_output("[✖] Cannot rename this item\n",error=True)
             return
         
         path = values[0]
@@ -2861,7 +2841,7 @@ class VSCodeLikeEditor:
                 self.root.title(f"Python Editor - {new_name}")
                 
         except Exception as e:
-            self.custom_showerror("Error", f"Failed to rename: \nThe '{new_name}' already\nExixts...")
+            self.terminal_output(f"Failed to rename: \nThe '{new_name}' already Exixts...\n",error=True)
             self.file_tree.item(item, text=f" {os.path.basename(old_path)}")
 
     def start_rename_via_shortcut(self, event=None):
@@ -2904,7 +2884,7 @@ class VSCodeLikeEditor:
             self.update_file_tree(parent_path, parent_node)
 
         except Exception as e:
-            self.custom_showerror("Error", f"Failed to rename: \nThe '{new_name}' already\nExixts...")
+            self.terminal_output(f"Failed to rename: \nThe '{new_name}' already Exixts...\n",error=True)
             self.file_tree.item(item, text=f" {os.path.basename(old_path)}")
 
     def cancel_rename(self, item, original_text):
@@ -2990,8 +2970,7 @@ class VSCodeLikeEditor:
 
             except Exception as e:
                 error_occurred = True
-                self.custom_showerror("Deletion Error", 
-                    f"Failed to delete {os.path.basename(path)}:\n{str(e)}")
+                self.terminal_output(f"Failed to delete {os.path.basename(path)}:\n{str(e)}\n", error=True)
 
         if error_occurred:
             try:
@@ -3232,20 +3211,21 @@ class VSCodeLikeEditor:
         self.title_bar.bind("<Button-1>", self.start_move_search)
         self.title_bar.bind("<B1-Motion>", self.do_move_search)
 
-        tk.Label(self.search_window, text="Find: ", bg="#a4ffee", fg="#0038b8", font=("Consolas", 15, 'bold')).pack(side=tk.LEFT, padx=5, pady=10)
+        self.search_window_label = tk.Label(self.search_window, text="Find: ", bg="#a4ffee", fg="#0038b8", font=("Consolas", 15, 'bold'))
+        self.search_window_label.pack(side=tk.LEFT, padx=5, pady=10)
         
         self.text_search_entry = tk.Entry(self.search_window, font=("Consolas", 12), bg="#190a0b", fg="white", insertbackground="white", border=5, borderwidth=3)
         self.text_search_entry.pack(side=tk.LEFT, padx=5, pady=10)
         self.text_search_entry.focus()
 
-        search_btn = tk.Button(self.search_window, text="🔍", command=self.search_text, bg="#a4ffee",activebackground='#a4ffee', fg="green", font=("Consolas", 25), border=0,borderwidth=0)
-        search_btn.pack(side=tk.LEFT, padx=1, pady=5)
+        self.search_btn = tk.Button(self.search_window, text="🔍", command=self.search_text, bg="#a4ffee",activebackground='#a4ffee', fg="green", font=("Consolas", 25), border=0,borderwidth=0)
+        self.search_btn.pack(side=tk.LEFT, padx=1, pady=5)
 
-        close_btn = tk.Button(self.search_window, text="❌", command=self.close_search_bar, bg="#a4ffee",activebackground='#a4ffee', fg="red", font=("Consolas", 15), border=0,borderwidth=0)
-        close_btn.pack(side=tk.LEFT, padx=5, pady=5)
+        self.close_btn = tk.Button(self.search_window, text="❌", command=self.close_search_bar, bg="#a4ffee",activebackground='#a4ffee', fg="red", font=("Consolas", 15), border=0,borderwidth=0)
+        self.close_btn.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.text_search_entry.bind("<KeyRelease>", self.real_time_search) 
-
+        
         self.text_search_entry.bind("<Return>", lambda e: self.search_text())
 
     def close_search_bar(self):
@@ -3285,7 +3265,7 @@ class VSCodeLikeEditor:
                                         foreground='#212157')
                 self.count_label.pack(side=tk.TOP, pady=5)
 
-            self.code_editor.tag_config('search_match', background="yellow", foreground="black")
+            self.code_editor.tag_config('search_match', background="yellow", foreground=self.BLACK)
 
     def start_move_search(self, event):
         self.search_window.x = event.x
@@ -3312,47 +3292,6 @@ class VSCodeLikeEditor:
         self.file_tree.selection_set(all_children)
         
         return "break"
-
-    def undo_last_deletion(self):
-        """Restore the most recent batch of deleted items"""
-        if not self.deletion_history:
-            return
-
-        expanded_paths = self.get_expanded_paths()
-
-        batch = self.deletion_history.pop()
-        restored_count = 0
-
-        # Reverse to restore parent directories first
-        for entry in reversed(batch):
-            try:
-                # Remove existing conflicts
-                if os.path.exists(entry['original_path']):
-                    if os.path.isfile(entry['original_path']):
-                        os.remove(entry['original_path'])
-                    else:
-                        shutil.rmtree(entry['original_path'])
-
-                # Restore from backup
-                shutil.move(entry['backup_path'], entry['original_path'])
-                restored_count += 1
-
-            except Exception as e:
-                self.custom_showerror("Undo Error",
-                    f"Failed to restore {os.path.basename(entry['original_path'])}:\n{str(e)}")
-
-        # Cleanup backup directory
-        try:
-            backup_dir = os.path.dirname(batch[0]['backup_path'])
-            shutil.rmtree(backup_dir)
-        except:
-            pass
-
-        # Update UI
-        self.file_tree.delete(*self.file_tree.get_children())
-        self.update_file_tree(self.folder_path)
-        self.restore_expanded_paths(expanded_paths)
-        self.terminal_output(f"Restored {restored_count} item(s)\n")
 
     def check_for_errors(self):
             """Check code for syntax errors using ast and pyflakes"""
@@ -3393,6 +3332,11 @@ class VSCodeLikeEditor:
 
     def _perform_real_filter(self):
         search_text = self.tree_search_entry.get().strip().lower()
+
+        # Add check for folder_path
+        if not self.folder_path:
+            self.terminal_output("[✖] No folder opened. Please open a folder first.\n", error=True)
+            return
         
         if not search_text:
             self.file_tree.delete(*self.file_tree.get_children())
@@ -3452,10 +3396,7 @@ class VSCodeLikeEditor:
             '.html': self.html_icon,
             # ... add all other extensions
         }.get(ext, self.file_icon)
-
-    def custom_showerror(self, title, message):
-        CustomMessageBox(self.root, title, message)
-
+    
     def clear_placeholder(self,event):
             if self.tree_search_entry.get() == "Search":
                 self.tree_search_entry.delete(0, tk.END)
@@ -3546,7 +3487,6 @@ class VSCodeLikeEditor:
         expanded_paths = self.get_expanded_paths()
         self.clipboard["operation"] = "copy"
         self.clipboard["paths"] = self.get_selected_paths()
-        self.highlight_clipboard_items()
         self.restore_expanded_paths(expanded_paths)
 
     def paste_items(self, event=None):
@@ -3570,44 +3510,38 @@ class VSCodeLikeEditor:
                         shutil.copy2(src_path, dest_path)
                 elif self.clipboard["operation"] == "cut":
                     shutil.move(src_path, dest_path)
-                
-                # Update current file if it was moved
-                if self.current_file == src_path:
-                    self.current_file = dest_path
-                    self.filename_label.config(text=os.path.basename(dest_path))
 
+                    # Update tabs if file was moved
+                    if src_path in self.opened_files:
+                        index = self.opened_files.index(src_path)
+                        self.opened_files[index] = dest_path  # Update opened files list
+                        
+                        # Update tab_buttons
+                        if src_path in self.tab_buttons:
+                            tab_info = self.tab_buttons.pop(src_path)
+                            self.tab_buttons[dest_path] = tab_info
+                            tab_container, label, btn = tab_info
+                            label.config(text=os.path.basename(dest_path))
+                            # Update bindings to new path
+                            label.bind("<Button-1>", lambda e, fp=dest_path: self.switch_to_tab(fp))
+                            btn.bind("<Button-1>", lambda e, fp=dest_path: self.close_tab(fp))
+                            # Update current_file if active
+                            if self.current_file == src_path:
+                                self.current_file = dest_path
+                                self.filename_label.config(text=os.path.basename(dest_path))
+                
             self.update_file_tree(self.folder_path)
             self.restore_expanded_paths(expanded_paths | {target_path})  # Keep target expanded
 
         except Exception as e:
-            # self.custom_showerror("Error", f"Failed to paste {str(e)}")
-            pass
+            self.terminal_output(f"Failed to paste {str(e)}\n",error=True)
 
         finally:
             # Clear clipboard after paste operation
             if self.clipboard["operation"] == "cut":
                 self.clipboard = {"operation": None, "paths": []}
-            self.highlight_clipboard_items(clear=True)
         
         self.update_file_tree(self.folder_path)
-        self.highlight_clipboard_items(clear=True)
-
-    def highlight_clipboard_items(self, clear=False):
-
-        self.file_tree.tag_configure("clipboard", background="#2d2d30")        
-
-        for item in self.file_tree.get_children():
-            current_tags = list(self.file_tree.item(item, "tags"))  # Get current tags
-            path = self.file_tree.item(item, "values")[0]
-            
-            if not clear and path in self.clipboard["paths"]:
-                # Add clipboard tag while keeping original tags
-                new_tags = current_tags + ["clipboard"]
-            else:
-                # Remove clipboard tag but keep others
-                new_tags = [tag for tag in current_tags if tag != "clipboard"]
-            
-            self.file_tree.item(item, tags=new_tags)
 
     def on_mousewheel(self,event):
         # For Windows
@@ -3676,16 +3610,16 @@ class VSCodeLikeEditor:
         self.opened_files.append(file_path)
         tab_id = len(self.opened_files)
         
-        tab_container = tk.Frame(self.tab_frame, bg="black", padx=5)
+        tab_container = tk.Frame(self.tab_frame, bg=self.BLACK, padx=5)
         tab_container.pack(side=tk.LEFT, padx=1, pady=2)
         
         label = tk.Label(tab_container, text=os.path.basename(file_path), 
-                       bg="black", fg="white", font=("Consolas", 12))
+                       bg=self.BLACK, fg="white", font=("Consolas", 12))
         label.pack(side=tk.LEFT)
         label.bind("<Button-1>", lambda e, fp=file_path: self.switch_to_tab(fp))
         
         close_btn = tk.Label(tab_container, text=" X ", fg="white", 
-                           bg="black", font=("Consolas", 12))
+                           bg=self.BLACK, font=("Consolas", 12))
         close_btn.pack(side=tk.LEFT)
         close_btn.bind("<Button-1>", lambda e, fp=file_path: self.close_tab(fp))
         
@@ -3699,6 +3633,11 @@ class VSCodeLikeEditor:
 
     def switch_to_tab(self, file_path):
         if file_path == self.current_file:
+            return
+        
+        if not os.path.exists(file_path):
+            self.terminal_output(f"File moved or deleted. Closing tab.\n", error=True)
+            self.close_tab(file_path)
             return
             
         self.current_file = file_path
@@ -3988,7 +3927,7 @@ class VSCodeLikeEditor:
         """Handle AI code generation request"""
         query = self.AI_search_entry.get().strip()
         if not query:
-            self.terminal_output("Please enter your AI query", error=True)
+            self.terminal_output("Please enter your AI query\n", error=True)
             return
         
         # Clear search entry
@@ -4109,30 +4048,33 @@ class VSCodeLikeEditor:
         self.import_check_timer = self.root.after(300, self.check_imports)
 
     def check_imports(self):
-        """Real-time import validation with visible area optimization"""
+        """Real-time import validation with alias handling"""
         self.code_editor.tag_remove("missing_module", "1.0", "end")
         
         try:
-            # Get visible text range
             start_idx = self.code_editor.index("@0,0")
             end_idx = self.code_editor.index("@0,10000")
             visible_text = self.code_editor.get(start_idx, end_idx)
 
-            # Find all import statements in visible area
             for match in self.import_pattern.finditer(visible_text):
                 modules = []
                 if match.group(1):  # from ... import
-                    modules.append(match.group(1).split('.')[0])
+                    base_module = match.group(1).split('.')[0]
+                    modules.append(base_module)
                 elif match.group(2):  # import ...
-                    modules.extend([m.split('.')[0] for m in match.group(2).split(',')])
+                    for m in re.split(r',\s*', match.group(2)):
+                        # Handle "as" aliases and split multi-imports
+                        module = m.split(' as ')[0].strip()
+                        if '.' in module:  # Handle submodules
+                            module = module.split('.')[0]
+                        modules.append(module)
 
-                # Check each base module
                 for module in modules:
-                    if not self.is_module_available(module.strip()):
+                    if module and not self.is_module_available(module):
                         self.highlight_missing_module(match.start(), start_idx, module)
 
         except Exception as e:
-            print(f"Import check error: {str(e)}")
+            self.terminal_output(f"Import check error: {str(e)}\n")
 
     def is_module_available(self, module_name):
         """Check if a module is installed"""
@@ -4159,6 +4101,565 @@ class VSCodeLikeEditor:
             end_pos = f"{line_start}+{end}c"
             self.code_editor.tag_add("missing_module", start_pos, end_pos)
 
+    def change_blue_theme(self,e = None):
+    
+        BACK_GROUND = "#001a33" 
+        RUN_BTN = "#1a4897"
+        TEXT_WHITE = "white"
+        self.BLACK = BACK_GROUND
+        FOLDER_NAME_COLOR = '#02f795'
+        DATA_TYPE = "#9aff35"   # datatypes = {"str", "int", "float", "bool", "list", "tuple", "dict", "set", "complex", "bytes", "range", "enumerate"} 
+        KEYWORD1 = "#fb468a" # keywords1 = {"for", "while", "if", "else", "elif", "try", "except", "finally", "break", "continue", "return", "import", "from", "as", "with", 'input', "lambda", "yield", "global", "nonlocal", "pass", "raise", 'do'}
+        KEYWORD2 = "#9CDCFE" #  keywords2 = {"and", "or", "not", "is", "in", "def", 'print', "class", 'True', 'False', 'None', 'NOTE'}
+        NON_DATA_TYPE = '#32e79e'
+        BRACKET = "#FFD700"
+        LINE_NUMBER = '#7c7cef'
+        COMMENT = "red"
+        
+        # =========*******=========*******=========******============
+        
+        # Top bar
+        self.root.config(bg=BACK_GROUND)
+
+        self.top_frame.config(bg=BACK_GROUND)
+        self.filename_label.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        self.run_button.config(bg=RUN_BTN, fg=TEXT_WHITE, activebackground=BACK_GROUND)
+        self.stop_button.config(bg="red", fg=TEXT_WHITE, activebackground=BACK_GROUND)
+        self.AI_search_entry.config(bg=BACK_GROUND, fg=TEXT_WHITE,insertbackground=TEXT_WHITE)
+        
+        self.file_explorer_toggle_btn.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.word_search_btn.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.toggle_folder_btn.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.file_tree.tag_configure("placeholder", foreground=BACK_GROUND, background=BACK_GROUND)
+
+        
+        self.style.configure(
+                            "Treeview", 
+                            background=BACK_GROUND, 
+                            fieldbackground=BACK_GROUND, 
+                            bordercolor="#654321"
+                            )
+        self.style.configure("Treeview.Heading",
+                            background=BACK_GROUND, 
+                            )
+        self.style.map("Treeview",
+                        background=[("selected", BACK_GROUND)]
+                       )
+        self.style.configure("Custom.Treeview", background=BACK_GROUND,foreground=self.CYAN)
+        self.style.configure(
+            "Vertical.TScrollbar",
+            background=self.CYAN, 
+            darkcolor=BACK_GROUND,
+            lightcolor=BACK_GROUND,
+            troughcolor=BACK_GROUND,
+            bordercolor=BACK_GROUND,
+            arrowcolor=BACK_GROUND, 
+        )
+        self.style.map(
+            "Vertical.TScrollbar",
+            background=[('active', 'magenta')],
+            arrowcolor=[('active', self.CYAN)]
+        )
+        self.style.configure(
+            "Horizontal.TScrollbar",
+            gripcount=0,
+            background=self.CYAN, 
+            darkcolor=BACK_GROUND,
+            lightcolor=BACK_GROUND,
+            troughcolor=BACK_GROUND, 
+            bordercolor=BACK_GROUND,
+            arrowcolor=BACK_GROUND, 
+        )
+        self.style.map(
+            "Horizontal.TScrollbar",
+            background=[('active', 'magenta')], # cyan
+            arrowcolor=[('active', self.CYAN)]
+        )
+
+        # File tree
+        self.folder_tree_frame.config(bg=BACK_GROUND, highlightbackground=BACK_GROUND)
+
+        self.button_frame.config(bg=BACK_GROUND)
+        self.button_frame1.config(bg=BACK_GROUND)
+        self.folder_name_label.config(bg=BACK_GROUND, fg=FOLDER_NAME_COLOR)
+        self.search_frame.config(bg=BACK_GROUND)
+        self.tree_search_entry.config(bg=BACK_GROUND, fg=TEXT_WHITE, highlightbackground=BACK_GROUND,insertbackground=TEXT_WHITE)
+        self.make_file_button.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.make_folder_button.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+
+        self.terminal_frame.config(bg=BACK_GROUND)
+        self.close_button_frame.config(bg=BACK_GROUND)
+        self.close_button.config(bg=BACK_GROUND,activebackground='red',activeforeground=BACK_GROUND)
+        self.terminal_delete_button.config(bg=BACK_GROUND,activebackground='red')
+
+        # Editor area
+        self.editor_frame.config(bg=BACK_GROUND)
+        self.file_tab_canvas.config(bg=BACK_GROUND,highlightcolor=self.CYAN,highlightbackground=self.CYAN)
+        self.tab_frame.config(bg=BACK_GROUND)
+        self.line_numbers.config(bg=BACK_GROUND, fg=LINE_NUMBER)
+
+
+
+
+        self.code_editor.config(bg=BACK_GROUND, fg=TEXT_WHITE,insertbackground=TEXT_WHITE)
+        self.bg_label.config(bg = BACK_GROUND)
+        self.suggestion_box.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        self.terminal.config(bg=BACK_GROUND, fg='red')
+        self.terminal_label.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        
+        # Tabs
+        for fp, (container, label, btn) in self.tab_buttons.items():
+            container.config(bg=BACK_GROUND)
+            label.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+            btn.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        
+        # Terminal
+        self.terminal_input.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        
+        # Menu bar
+        self.menu_bar.config(bg=BACK_GROUND)
+
+        self.file_menu.config(bg=BACK_GROUND,foreground=TEXT_WHITE)
+        self.file_menu.delete(0, 'end') 
+        self.file_menu.add_command(label="Open File",accelerator="Ctrl+O", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.open_file)
+        self.file_menu.add_command(label="Open Folder",accelerator="Ctrl+Shift+O", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.open_folder)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Save",accelerator="Ctrl+S", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.save_file)
+        self.file_menu.add_command(label="Save As",accelerator="Ctrl+Shift+S", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.save_as_file)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='red', command=self.exit_editor)
+
+        self.edit_menu.config(bg=BACK_GROUND,foreground=TEXT_WHITE)
+        self.edit_menu.delete(0, 'end') 
+        self.edit_menu.add_command(label="Undo",accelerator="Ctrl+Z", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.safe_undo)
+        self.edit_menu.add_command(label="Redo",accelerator="Ctrl+Y", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.safe_redo)
+        self.edit_menu.add_separator()
+        self.edit_menu.add_command(label="Cut",accelerator="Ctrl+X", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.cut_text)
+        self.edit_menu.add_command(label="Copy",accelerator="Ctrl+C", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.copy_text)
+        self.edit_menu.add_command(label="Paste",accelerator="Ctrl+V", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.paste_text)
+        self.edit_menu.add_separator()
+        self.edit_menu.add_command(label="Rename",accelerator="F2", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.start_rename_via_shortcut)
+        self.edit_menu.add_command(label="Search",accelerator="F3", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.open_search_bar)
+        self.edit_menu.add_separator()
+        self.edit_menu.add_command(label="Zoom In",accelerator="Ctrl++", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.increase_text_size)
+        self.edit_menu.add_command(label="Zoom Out",accelerator="Ctrl+-", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.decrease_text_size)
+
+        self.run_menu.config(bg=BACK_GROUND,foreground=TEXT_WHITE)
+        self.run_menu.delete(0, 'end') 
+        self.run_menu.add_command(label="Run",accelerator="Alt+S", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.run_code)
+        self.run_menu.add_separator()
+        self.run_menu.add_command(label="Stop Running... ",accelerator="Ctrl+Q", font=self.menu_bar_font_style, background='red', foreground='white', command=self.stop_code)
+
+        self.terminal_menu.config(bg=BACK_GROUND,fg=TEXT_WHITE)
+        self.terminal_menu.delete(0, 'end')
+        self.terminal_menu.add_command(label="Show Terminal",accelerator="Ctrl+Shift+T", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.reopen_terminal)
+        self.terminal_menu.add_command(label="Clear Terminal",accelerator="Ctrl+Shift+C", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.terminal_delete_clear)
+        self.terminal_menu.add_separator()
+        self.terminal_menu.add_command(label="New Terminal",accelerator="Ctrl+Shift+`", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='white', command=self.open_new_terminal)
+
+        self.theme_menu.config(background=BACK_GROUND,fg=TEXT_WHITE)
+        self.theme_menu.delete(0, 'end')
+        self.theme_menu.add_command(label="Dark Blue    ",image=self.dark_blue_icon, compound='right', command=self.change_blue_theme)
+        self.theme_menu.add_separator()
+        self.theme_menu.add_command(label="Black        ",image=self.black_icon, compound='right',command=self.change_dark_theme)
+        self.theme_menu.add_separator()
+        self.theme_menu.add_command(label="Dark Green   ",image=self.dark_green_icon, compound='right',command=self.change_dark_green_theme)
+        self.theme_menu.add_separator()
+                  
+   
+        self.syntax_colors = {
+            "data_type": DATA_TYPE,  # Teal
+            "keyword1": KEYWORD1,   # Blue
+            "keyword2": KEYWORD2,   # Light Blue
+            "non_data_type": NON_DATA_TYPE,  # magenta
+            "bracket":BRACKET     # Gold
+        }
+        self.syntax_colors.update({
+            "comment": COMMENT,
+            "comment_bracket": COMMENT,
+        })
+        self.code_editor.tag_config("comment", foreground=self.syntax_colors["comment"])
+        self.code_editor.tag_config("comment_bracket", foreground=self.syntax_colors["comment_bracket"])
+        # Force syntax re-highlight
+        self._highlight_syntax()
+        
+        self.root.update()
+        
+    def change_dark_theme(self,e = None):
+    
+        BACK_GROUND = "black"
+        RUN_BTN = "#3e3e3e"
+        TEXT_WHITE = "white"
+        self.BLACK = BACK_GROUND
+        FOLDER_NAME_COLOR = 'yellow'
+        DATA_TYPE = "#03f34a" # datatypes = {"str", "int", "float", "bool", "list", "tuple", "dict", "set", "complex", "bytes", "range", "enumerate"} 
+        KEYWORD1 = "#ff00ff" # keywords1 = {"for", "while", "if", "else", "elif", "try", "except", "finally", "break", "continue", "return", "import", "from", "as", "with", 'input', "lambda", "yield", "global", "nonlocal", "pass", "raise", 'do'}
+        KEYWORD2 = "blue" #  keywords2 = {"and", "or", "not", "is", "in", "def", 'print', "class", 'True', 'False', 'None', 'NOTE'}
+        NON_DATA_TYPE = 'cyan'
+        BRACKET = "yellow"
+        LINE_NUMBER = '#7bdc5e'
+        COMMENT = "green"
+        
+        # =========*******=========*******=========******============
+        
+        # Top bar
+        self.root.config(bg=BACK_GROUND)
+
+        self.top_frame.config(bg=BACK_GROUND)
+        self.filename_label.config(background=BACK_GROUND, fg=TEXT_WHITE)
+        self.run_button.config(bg=RUN_BTN, fg=TEXT_WHITE, activebackground=BACK_GROUND)
+        self.stop_button.config(bg="red", fg=TEXT_WHITE, activebackground=BACK_GROUND)
+        self.AI_search_entry.config(bg=BACK_GROUND, fg=TEXT_WHITE,insertbackground=TEXT_WHITE)
+        
+        self.file_explorer_toggle_btn.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.word_search_btn.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.toggle_folder_btn.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.file_tree.tag_configure("placeholder", foreground=BACK_GROUND, background=BACK_GROUND)
+
+        
+        self.style.configure(
+                            "Treeview", 
+                            background=BACK_GROUND, 
+                            fieldbackground=BACK_GROUND, 
+                            bordercolor="#654321"
+                            )
+        self.style.configure("Treeview.Heading",
+                            background=BACK_GROUND, 
+                            )
+        self.style.map("Treeview",
+                        background=[("selected", BACK_GROUND)]
+                       )
+        self.style.configure("Custom.Treeview", background=BACK_GROUND,foreground=self.CYAN)
+        self.style.configure(
+            "Vertical.TScrollbar",
+            background=self.CYAN, 
+            darkcolor=BACK_GROUND,
+            lightcolor=BACK_GROUND,
+            troughcolor=BACK_GROUND,
+            bordercolor=BACK_GROUND,
+            arrowcolor=BACK_GROUND, 
+        )
+        self.style.map(
+            "Vertical.TScrollbar",
+            background=[('active', 'magenta')],
+            arrowcolor=[('active', self.CYAN)]
+        )
+        self.style.configure(
+            "Horizontal.TScrollbar",
+            gripcount=0,
+            background=self.CYAN, 
+            darkcolor=BACK_GROUND,
+            lightcolor=BACK_GROUND,
+            troughcolor=BACK_GROUND, 
+            bordercolor=BACK_GROUND,
+            arrowcolor=BACK_GROUND, 
+        )
+        self.style.map(
+            "Horizontal.TScrollbar",
+            background=[('active', 'magenta')], # cyan
+            arrowcolor=[('active', self.CYAN)]
+        )
+
+        # File tree
+        self.folder_tree_frame.config(bg=BACK_GROUND, highlightbackground=BACK_GROUND)
+
+        self.button_frame.config(bg=BACK_GROUND)
+        self.button_frame1.config(bg=BACK_GROUND)
+        self.folder_name_label.config(bg=BACK_GROUND, fg=FOLDER_NAME_COLOR)
+        self.search_frame.config(bg=BACK_GROUND)
+        self.tree_search_entry.config(bg=BACK_GROUND, fg=TEXT_WHITE, highlightbackground=BACK_GROUND,insertbackground=TEXT_WHITE)
+        self.make_file_button.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.make_folder_button.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+
+        self.terminal_frame.config(bg=BACK_GROUND)
+        self.close_button_frame.config(bg=BACK_GROUND)
+        self.close_button.config(bg=BACK_GROUND,activebackground='red',activeforeground=BACK_GROUND)
+        self.terminal_delete_button.config(bg=BACK_GROUND,activebackground='red')
+
+        # Editor area
+        self.editor_frame.config(bg=BACK_GROUND)
+        self.file_tab_canvas.config(bg=BACK_GROUND,highlightcolor=self.CYAN,highlightbackground=self.CYAN)
+        self.tab_frame.config(bg=BACK_GROUND)
+        self.line_numbers.config(bg=BACK_GROUND, fg=LINE_NUMBER)
+
+
+
+
+        self.code_editor.config(bg=BACK_GROUND, fg=TEXT_WHITE,insertbackground=TEXT_WHITE)
+        self.bg_label.config(bg = BACK_GROUND)
+        self.suggestion_box.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        self.terminal.config(bg=BACK_GROUND, fg='red')
+        self.terminal_label.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        
+        # Tabs
+        for fp, (container, label, btn) in self.tab_buttons.items():
+            container.config(bg=BACK_GROUND)
+            label.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+            btn.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        
+        # Terminal
+        self.terminal_input.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        
+        # Menu bar
+        self.menu_bar.config(bg=BACK_GROUND)
+
+        self.file_menu.config(bg=BACK_GROUND,foreground=TEXT_WHITE)
+        self.file_menu.delete(0, 'end') 
+        self.file_menu.add_command(label="Open File",accelerator="Ctrl+O", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.open_file)
+        self.file_menu.add_command(label="Open Folder",accelerator="Ctrl+Shift+O", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.open_folder)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Save",accelerator="Ctrl+S", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.save_file)
+        self.file_menu.add_command(label="Save As",accelerator="Ctrl+Shift+S", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.save_as_file)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='red', command=self.exit_editor)
+
+        self.edit_menu.config(bg=BACK_GROUND,foreground=TEXT_WHITE)
+        self.edit_menu.delete(0, 'end') 
+        self.edit_menu.add_command(label="Undo",accelerator="Ctrl+Z", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.safe_undo)
+        self.edit_menu.add_command(label="Redo",accelerator="Ctrl+Y", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.safe_redo)
+        self.edit_menu.add_separator()
+        self.edit_menu.add_command(label="Cut",accelerator="Ctrl+X", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.cut_text)
+        self.edit_menu.add_command(label="Copy",accelerator="Ctrl+C", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.copy_text)
+        self.edit_menu.add_command(label="Paste",accelerator="Ctrl+V", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.paste_text)
+        self.edit_menu.add_separator()
+        self.edit_menu.add_command(label="Rename",accelerator="F2", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.start_rename_via_shortcut)
+        self.edit_menu.add_command(label="Search",accelerator="F3", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.open_search_bar)
+        self.edit_menu.add_separator()
+        self.edit_menu.add_command(label="Zoom In",accelerator="Ctrl++", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.increase_text_size)
+        self.edit_menu.add_command(label="Zoom Out",accelerator="Ctrl+-", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.decrease_text_size)
+
+        self.run_menu.config(bg=BACK_GROUND,foreground=TEXT_WHITE)
+        self.run_menu.delete(0, 'end') 
+        self.run_menu.add_command(label="Run",accelerator="Alt+S", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.run_code)
+        self.run_menu.add_separator()
+        self.run_menu.add_command(label="Stop Running... ",accelerator="Ctrl+Q", font=self.menu_bar_font_style, background='red', foreground=TEXT_WHITE, command=self.stop_code)
+
+        self.terminal_menu.config(bg=BACK_GROUND,fg=TEXT_WHITE)
+        self.terminal_menu.delete(0, 'end')
+        self.terminal_menu.add_command(label="Show Terminal",accelerator="Ctrl+Shift+T", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.reopen_terminal)
+        self.terminal_menu.add_command(label="Clear Terminal",accelerator="Ctrl+Shift+C", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.terminal_delete_clear)
+        self.terminal_menu.add_separator()
+        self.terminal_menu.add_command(label="New Terminal",accelerator="Ctrl+Shift+`", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.open_new_terminal)
+
+        self.theme_menu.config(background=BACK_GROUND,fg=TEXT_WHITE)
+        self.theme_menu.delete(0, 'end')
+        self.theme_menu.add_command(label="Dark Blue    ",image=self.dark_blue_icon, compound='right', command=self.change_blue_theme)
+        self.theme_menu.add_separator()
+        self.theme_menu.add_command(label="Black        ",image=self.black_icon, compound='right',command=self.change_dark_theme)
+        self.theme_menu.add_separator()
+        self.theme_menu.add_command(label="Dark Green   ",image=self.dark_green_icon, compound='right',command=self.change_dark_green_theme)
+        self.theme_menu.add_separator()
+        
+          
+   
+        self.syntax_colors = {
+            "data_type": DATA_TYPE,  # Teal
+            "keyword1": KEYWORD1,   # Blue
+            "keyword2": KEYWORD2,   # Light Blue
+            "non_data_type": NON_DATA_TYPE,  # magenta
+            "bracket":BRACKET     # Gold
+        }
+        self.syntax_colors.update({
+            "comment": COMMENT,
+            "comment_bracket": COMMENT,
+        })
+        self.code_editor.tag_config("comment", foreground=self.syntax_colors["comment"])
+        self.code_editor.tag_config("comment_bracket", foreground=self.syntax_colors["comment_bracket"])
+        # Force syntax re-highlight
+        self._highlight_syntax()
+        
+        self.root.update()
+                
+    def change_dark_green_theme(self,e = None):
+    
+        BACK_GROUND = "#062000"
+        RUN_BTN = "#3a5f23"
+        TEXT_WHITE = "white"
+        self.BLACK = BACK_GROUND
+        FOLDER_NAME_COLOR = '#71fa0c'
+        DATA_TYPE = "#fc83fc" # datatypes = {"str", "int", "float", "bool", "list", "tuple", "dict", "set", "complex", "bytes", "range", "enumerate"} 
+        KEYWORD1 = "#ff40ff" # keywords1 = {"for", "while", "if", "else", "elif", "try", "except", "finally", "break", "continue", "return", "import", "from", "as", "with", 'input', "lambda", "yield", "global", "nonlocal", "pass", "raise", 'do'}
+        KEYWORD2 = "#8af4af" #  keywords2 = {"and", "or", "not", "is", "in", "def", 'print', "class", 'True', 'False', 'None', 'NOTE'}
+        NON_DATA_TYPE = '#ff8040'
+        BRACKET = "yellow"
+        LINE_NUMBER = '#1ab5c6'
+        COMMENT = 'red'
+        
+        # =========*******=========*******=========******============
+
+        
+        
+        # Top bar
+        self.root.config(bg=BACK_GROUND)
+
+        self.top_frame.config(bg=BACK_GROUND)
+        self.filename_label.config(background=BACK_GROUND, fg=TEXT_WHITE)
+        self.run_button.config(bg=RUN_BTN, fg=TEXT_WHITE, activebackground=BACK_GROUND)
+        self.stop_button.config(bg="red", fg=TEXT_WHITE, activebackground=BACK_GROUND)
+        self.AI_search_entry.config(bg=BACK_GROUND, fg=TEXT_WHITE,insertbackground=TEXT_WHITE)
+        
+        self.file_explorer_toggle_btn.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.word_search_btn.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.toggle_folder_btn.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.file_tree.tag_configure("placeholder", foreground=BACK_GROUND, background=BACK_GROUND)
+
+
+
+        self.style.configure(
+                            "Treeview", 
+                            background=BACK_GROUND, 
+                            fieldbackground=BACK_GROUND, 
+                            bordercolor="#654321"
+                            )
+        self.style.configure("Treeview.Heading",
+                            background=BACK_GROUND, 
+                            )
+        self.style.map("Treeview",
+                        background=[("selected", BACK_GROUND)]
+                       )
+        self.style.configure("Custom.Treeview", background=BACK_GROUND,foreground=self.CYAN)
+        self.style.configure(
+            "Vertical.TScrollbar",
+            background=self.CYAN, 
+            darkcolor=BACK_GROUND,
+            lightcolor=BACK_GROUND,
+            troughcolor=BACK_GROUND,
+            bordercolor=BACK_GROUND,
+            arrowcolor=BACK_GROUND, 
+        )
+        self.style.map(
+            "Vertical.TScrollbar",
+            background=[('active', 'magenta')],
+            arrowcolor=[('active', self.CYAN)]
+        )
+        self.style.configure(
+            "Horizontal.TScrollbar",
+            gripcount=0,
+            background=self.CYAN, 
+            darkcolor=BACK_GROUND,
+            lightcolor=BACK_GROUND,
+            troughcolor=BACK_GROUND, 
+            bordercolor=BACK_GROUND,
+            arrowcolor=BACK_GROUND, 
+        )
+        self.style.map(
+            "Horizontal.TScrollbar",
+            background=[('active', 'magenta')], # cyan
+            arrowcolor=[('active', self.CYAN)]
+        )
+
+        # File tree
+        self.folder_tree_frame.config(bg=BACK_GROUND, highlightbackground=BACK_GROUND)
+
+        self.button_frame.config(bg=BACK_GROUND)
+        self.button_frame1.config(bg=BACK_GROUND)
+        self.folder_name_label.config(bg=BACK_GROUND, fg=FOLDER_NAME_COLOR)
+        self.search_frame.config(bg=BACK_GROUND)
+        self.tree_search_entry.config(bg=BACK_GROUND, fg=TEXT_WHITE, highlightbackground=BACK_GROUND,insertbackground=TEXT_WHITE)
+        self.make_file_button.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+        self.make_folder_button.config(bg=BACK_GROUND,activebackground=BACK_GROUND)
+
+        self.terminal_frame.config(bg=BACK_GROUND)
+        self.close_button_frame.config(bg=BACK_GROUND)
+        self.close_button.config(bg=BACK_GROUND,activebackground='red',activeforeground=BACK_GROUND)
+        self.terminal_delete_button.config(bg=BACK_GROUND,activebackground='red')
+
+        # Editor area
+        self.editor_frame.config(bg=BACK_GROUND)
+        self.file_tab_canvas.config(bg=BACK_GROUND,highlightcolor=self.CYAN,highlightbackground=self.CYAN)
+        self.tab_frame.config(bg=BACK_GROUND)
+        self.line_numbers.config(bg=BACK_GROUND, fg=LINE_NUMBER)
+
+
+
+
+        self.code_editor.config(bg=BACK_GROUND, fg=TEXT_WHITE,insertbackground=TEXT_WHITE)
+        self.bg_label.config(bg = BACK_GROUND)
+        self.suggestion_box.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        self.terminal.config(bg=BACK_GROUND, fg='red')
+        self.terminal_label.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        
+        # Tabs
+        for fp, (container, label, btn) in self.tab_buttons.items():
+            container.config(bg=BACK_GROUND)
+            label.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+            btn.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        
+        # Terminal
+        self.terminal_input.config(bg=BACK_GROUND, fg=TEXT_WHITE)
+        
+        # Menu bar
+        self.menu_bar.config(bg=BACK_GROUND)
+
+        self.file_menu.config(bg=BACK_GROUND,foreground=TEXT_WHITE)
+        self.file_menu.delete(0, 'end') 
+        self.file_menu.add_command(label="Open File",accelerator="Ctrl+O", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.open_file)
+        self.file_menu.add_command(label="Open Folder",accelerator="Ctrl+Shift+O", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.open_folder)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Save",accelerator="Ctrl+S", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.save_file)
+        self.file_menu.add_command(label="Save As",accelerator="Ctrl+Shift+S", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.save_as_file)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", font=self.menu_bar_font_style, background=BACK_GROUND, foreground='red', command=self.exit_editor)
+
+        self.edit_menu.config(bg=BACK_GROUND,foreground=TEXT_WHITE)
+        self.edit_menu.delete(0, 'end') 
+        self.edit_menu.add_command(label="Undo",accelerator="Ctrl+Z", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.safe_undo)
+        self.edit_menu.add_command(label="Redo",accelerator="Ctrl+Y", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.safe_redo)
+        self.edit_menu.add_separator()
+        self.edit_menu.add_command(label="Cut",accelerator="Ctrl+X", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.cut_text)
+        self.edit_menu.add_command(label="Copy",accelerator="Ctrl+C", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.copy_text)
+        self.edit_menu.add_command(label="Paste",accelerator="Ctrl+V", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.paste_text)
+        self.edit_menu.add_separator()
+        self.edit_menu.add_command(label="Rename",accelerator="F2", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.start_rename_via_shortcut)
+        self.edit_menu.add_command(label="Search",accelerator="F3", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.open_search_bar)
+        self.edit_menu.add_separator()
+        self.edit_menu.add_command(label="Zoom In",accelerator="Ctrl++", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.increase_text_size)
+        self.edit_menu.add_command(label="Zoom Out",accelerator="Ctrl+-", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.decrease_text_size)
+
+        self.run_menu.config(bg=BACK_GROUND,foreground=TEXT_WHITE)
+        self.run_menu.delete(0, 'end') 
+        self.run_menu.add_command(label="Run",accelerator="Alt+S", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.run_code)
+        self.run_menu.add_separator()
+        self.run_menu.add_command(label="Stop Running... ",accelerator="Ctrl+Q", font=self.menu_bar_font_style, background='red', foreground=TEXT_WHITE, command=self.stop_code)
+
+        self.terminal_menu.config(bg=BACK_GROUND,fg=TEXT_WHITE)
+        self.terminal_menu.delete(0, 'end')
+        self.terminal_menu.add_command(label="Show Terminal",accelerator="Ctrl+Shift+T", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.reopen_terminal)
+        self.terminal_menu.add_command(label="Clear Terminal",accelerator="Ctrl+Shift+C", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.terminal_delete_clear)
+        self.terminal_menu.add_separator()
+        self.terminal_menu.add_command(label="New Terminal",accelerator="Ctrl+Shift+`", font=self.menu_bar_font_style, background=BACK_GROUND, foreground=TEXT_WHITE, command=self.open_new_terminal)
+
+        self.theme_menu.config(background=BACK_GROUND,fg=TEXT_WHITE)
+        self.theme_menu.delete(0, 'end')
+        self.theme_menu.add_command(label="Dark Blue    ",image=self.dark_blue_icon, compound='right', command=self.change_blue_theme)
+        self.theme_menu.add_separator()
+        self.theme_menu.add_command(label="Black        ",image=self.black_icon, compound='right',command=self.change_dark_theme)
+        self.theme_menu.add_separator()
+        self.theme_menu.add_command(label="Dark Green   ",image=self.dark_green_icon, compound='right',command=self.change_dark_green_theme)
+        self.theme_menu.add_separator()
+        
+          
+   
+        self.syntax_colors = {
+            "data_type": DATA_TYPE,  # Teal
+            "keyword1": KEYWORD1,   # Blue
+            "keyword2": KEYWORD2,   # Light Blue
+            "non_data_type": NON_DATA_TYPE,  # magenta
+            "bracket":BRACKET     # Gold
+        }
+        self.syntax_colors.update({
+            "comment": COMMENT,
+            "comment_bracket": COMMENT,
+        })
+        self.code_editor.tag_config("comment", foreground=self.syntax_colors["comment"])
+        self.code_editor.tag_config("comment_bracket", foreground=self.syntax_colors["comment_bracket"])
+
+        self._highlight_syntax()
+        
+        self.root.update()
+        
+    
+
 
 
 
@@ -4178,9 +4679,5 @@ if __name__ == "__main__":
     else:
         # Start the editor GUI
         root = TkinterDnD.Tk()
-        editor = VSCodeLikeEditor(root)
+        VSCodeLikeEditor(root)
         root.mainloop()
-
-
-
-
