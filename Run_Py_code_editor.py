@@ -205,7 +205,7 @@ class VSCodeLikeEditor:
                 text=">>",
                 command=self.toggle_replace,
                 bg=editor.BLACK,
-                fg='cyan',
+                fg='yellow',
                 bd=0,
                 activebackground=editor.BLACK,
                 activeforeground='cyan',
@@ -1073,6 +1073,7 @@ class VSCodeLikeEditor:
             insertbackground="white", yscrollcommand=lambda *args: (self.scrollbar.set(*args), self.sync_scroll(*args)),
         )
         self.code_editor.tag_configure("missing_module", underline=True, underlinefg="red", foreground="red")
+        self.code_editor.tag_configure("definition_highlight", background="#ffff88", foreground="black")
         self.code_editor.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.code_editor.tag_configure("current_line", 
                               borderwidth=1,
@@ -1257,6 +1258,7 @@ class VSCodeLikeEditor:
         self.code_editor.bind("<Control-Shift-Right>", lambda e: self.modify_selection("right", True))
         self.code_editor.bind("<Button-1>", self.handle_mouse_click)
         self.code_editor.after(1, self._highlight_syntax)
+        self.code_editor.bind("<Control-Button-1>", self.jump_to_definition)
                 
 
         # Keyboard Shortcuts
@@ -2413,8 +2415,8 @@ class VSCodeLikeEditor:
         self.line_numbers.delete("1.0", tk.END)
 
         total_lines = int(self.code_editor.index("end-1c").split(".")[0])
-
         cursor_line = int(self.code_editor.index(tk.INSERT).split(".")[0])
+
         self.code_editor.tag_remove("current_line", "1.0", tk.END)
         self.code_editor.tag_add("current_line", f"{cursor_line}.0", f"{cursor_line}.end+1c")
 
@@ -2433,11 +2435,19 @@ class VSCodeLikeEditor:
 
         self.line_numbers.config(state=tk.DISABLED)
 
-        # **Ensure scrolling follows cursor position**
-        self.code_editor.see(tk.INSERT)
+        # if not self.is_cursor_visible():
+        #     self.code_editor.see(tk.INSERT)
 
         self.sync_scroll()  # Ensure scrolling is synced
+        # self.line_numbers.config(state=tk.DISABLED)
         self.root.after(1, self.auto_save)
+
+    def is_cursor_visible(self):
+        # Get the bounding box of the cursor position
+        bbox = self.code_editor.bbox(tk.INSERT)
+        
+        # If bbox exists, the cursor is visible in the viewport
+        return bbox is not None
 
     def fuzzy_match(self, typed_word, suggestions):
         """Find words that match `typed_word`, even if letters are missing."""
@@ -4513,6 +4523,92 @@ class VSCodeLikeEditor:
         self.replace_dialog = self.ReplaceDialog(self)
         self.replace_dialog.protocol("WM_DELETE_WINDOW", self.replace_dialog.on_close)
 
+    def get_script(self):
+        """Create Jedi Script with proper environment"""
+        code = self.code_editor.get("1.0", tk.END)
+        path = self.current_file if self.current_file else None  # Use None for unsaved files
+        return jedi.Script(code=code, path=path)
+
+    def get_current_word(self, event):
+        """More reliable word detection using Jedi"""
+        try:
+            x, y = event.x, event.y
+            index = self.code_editor.index(f"@{x},{y}")
+            line, col = map(int, index.split('.'))
+            col += 1  # Jedi columns are 1-based
+            
+            script = self.get_script()
+            names = script.get_references(line, col)
+            
+            if names:
+                return names[0].name
+            return self.code_editor.get(f"{index} wordstart", f"{index} wordend")
+        except Exception as e:
+            return self.code_editor.get(f"{index} wordstart", f"{index} wordend")
+        
+    def find_definition_position(self, word):
+        """Find the line number where the function is defined"""
+        content = self.code_editor.get("1.0", tk.END)
+        for lineno, line in enumerate(content.split('\n'), 1):
+            if re.match(fr'^\s*def\s+{word}\s*\(', line):
+                return lineno
+        return None
+
+    def jump_to_definition(self, event):
+        """Improved Ctrl+Click navigation with proper file handling"""
+        try:
+            # Get click position
+            x, y = event.x, event.y
+            index = self.code_editor.index(f"@{x},{y}")
+            line, col = map(int, index.split('.'))
+            col += 1  # Jedi columns are 1-based
+
+            # Get Jedi script
+            script = self.get_script()
+            defs = script.goto(line, col, follow_imports=False)
+
+            if not defs:
+                self.terminal_output("No definition found\n", error=True)
+                return
+
+            first_def = defs[0]
+            
+            # Handle different definition types
+            if first_def.type == 'keyword':
+                self.terminal_output(f"'{first_def.name}' is a Python keyword\n")
+                return
+                
+            if first_def.in_builtin_module():
+                self.terminal_output(f"'{first_def.name}' is a built-in symbol\n")
+                return
+
+            # Check if definition is in current file
+            if first_def.module_path != self.current_file:
+                if self.current_file:
+                    rel_path = os.path.relpath(first_def.module_path, os.path.dirname(self.current_file))
+                else:
+                    rel_path = first_def.module_path
+                self.terminal_output(f"Definition in: {rel_path}\n")
+                return
+
+            # Calculate position in editor (Jedi uses 1-based line numbers)
+            def_line = first_def.line
+            target_index = f"{def_line}.0"
+
+            # Move cursor and scroll to location
+            self.code_editor.mark_set(tk.INSERT, target_index)
+            self.code_editor.see(target_index)
+            
+            # Highlight the definition line
+            self.code_editor.tag_remove("definition_highlight", "1.0", tk.END)
+            self.code_editor.tag_add("definition_highlight", 
+                                f"{def_line}.0", f"{def_line}.end")
+            self.root.after(2000, lambda: self.code_editor.tag_remove(
+                "definition_highlight", "1.0", tk.END))
+
+        except Exception as e:
+            self.terminal_output(f"Navigation error: {str(e)}\n", error=True)
+
 
 
 
@@ -5293,3 +5389,6 @@ if __name__ == "__main__":
         root = TkinterDnD.Tk()
         VSCodeLikeEditor(root)
         root.mainloop()
+
+
+
