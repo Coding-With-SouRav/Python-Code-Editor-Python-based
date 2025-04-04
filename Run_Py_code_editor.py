@@ -22,7 +22,7 @@ import signal
 import pyperclip
 import google.generativeai as genai
 from tkinterdnd2 import DND_FILES, TkinterDnD
-
+import tkinter.font
 
 
 
@@ -247,8 +247,7 @@ class VSCodeLikeEditor:
             self.find_entry.pack(side=tk.LEFT, padx=5)
             self.find_entry.bind("<FocusIn>", self.on_find_focus_in)
             self.find_entry.bind("<FocusOut>", self.on_find_focus_out)
-
-
+            self.find_entry.bind("<Return>", self.jump_to_next_match)
            
             # Replace Frame
             self.replace_frame = tk.Frame(self, bg=editor.BLACK)
@@ -404,6 +403,7 @@ class VSCodeLikeEditor:
         def on_close(self):
             self.editor.code_editor.tag_remove("search_highlight", "1.0", tk.END)
             self.editor.code_editor.tag_remove("current_match", "1.0", tk.END)
+            self.editor.code_editor.tag_remove("replaced", "1.0", tk.END)
             self.editor.code_editor.focus_set()
             self.destroy()
             if hasattr(self.editor, 'replace_dialog'):
@@ -428,7 +428,7 @@ class VSCodeLikeEditor:
                 self.editor.code_editor.tag_add("current_match", match_pos, end_pos)
                 self.editor.code_editor.tag_config(
                     "current_match", 
-                    background="orange", 
+                    background="green", 
                     foreground="black"
                 )
             
@@ -483,6 +483,9 @@ class VSCodeLikeEditor:
                 
                 # Move cursor to end of replacement
                 new_pos = f"{match_pos}+{len(replace_text)}c"
+                editor.code_editor.tag_add("replaced", match_pos, new_pos)
+                editor.code_editor.tag_config("replaced", background="green")
+                editor.code_editor.tag_raise("replaced")  # Ensure it's above other tags
                 editor.code_editor.mark_set(tk.INSERT, new_pos)
                 editor.code_editor.see(new_pos)
                 
@@ -521,6 +524,47 @@ class VSCodeLikeEditor:
                 self.replace_entry.insert(0, "Replace")
                 self.replace_entry.config(fg='gray', font=('Consolas', 12, 'italic'))
 
+        def jump_to_next_match(self, event=None):
+            """Moves cursor to the next highlighted match and centers it"""
+            find_text = self.find_entry.get().strip()
+            if not find_text:
+                return
+
+            # Start search from current cursor position
+            start_pos = self.search_start
+            
+            # Find next match
+            match_pos = self.find_next_match(start_pos)
+            
+            if not match_pos:
+                # Wrap around from beginning if no matches found
+                match_pos = self.find_next_match("1.0")
+                if not match_pos:
+                    messagebox.showinfo("Find", "No matches found", parent=self)
+                    return
+
+            # Calculate end position of match
+            end_pos = f"{match_pos}+{len(find_text)}c"
+            self.search_start = end_pos
+            # Move cursor and highlight current match with green
+            self.editor.code_editor.mark_set(tk.INSERT, match_pos)
+            self.editor.code_editor.tag_remove("current_match", "1.0", tk.END)
+            self.editor.code_editor.tag_add("current_match", match_pos, end_pos)
+            self.editor.code_editor.tag_config("current_match", background="#e62c0b", foreground="black")
+
+            # Center the match in the editor
+            self.editor.code_editor.see(match_pos)
+            line = int(match_pos.split('.')[0])
+            font = tkinter.font.Font(font=self.editor.code_editor['font'])
+            line_height = font.metrics('linespace')
+            editor_height = self.editor.code_editor.winfo_height()
+            
+            if line_height and editor_height:
+                visible_lines = editor_height // line_height
+                target_line = max(1, line - (visible_lines-12) // 2)
+                self.editor.code_editor.see(f"{target_line}.0")
+
+            
     def __init__(self, root):
         self.BLACK = 'black'
         self.CYAN = 'cyan'
@@ -995,7 +1039,6 @@ class VSCodeLikeEditor:
         self.canvas_scrollbar = ttk.Scrollbar(self.editor_frame, orient="horizontal",
                                             command=self.file_tab_canvas.xview)
         self.canvas_scrollbar.pack(side=tk.TOP, fill=tk.X)
-        # self.canvas_scrollbar.pack_forget()
         self.file_tab_canvas.configure(xscrollcommand=self.canvas_scrollbar.set)
 
         self.tab_frame = tk.Frame(self.file_tab_canvas, bg=self.BLACK)
@@ -1073,7 +1116,7 @@ class VSCodeLikeEditor:
             insertbackground="white", yscrollcommand=lambda *args: (self.scrollbar.set(*args), self.sync_scroll(*args)),
         )
         self.code_editor.tag_configure("missing_module", underline=True, underlinefg="red", foreground="red")
-        self.code_editor.tag_configure("definition_highlight", background="#ffff88", foreground="black")
+        self.code_editor.tag_configure("definition_highlight", background="yellow", foreground="black")
         self.code_editor.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.code_editor.tag_configure("current_line", 
                               borderwidth=1,
@@ -1121,9 +1164,15 @@ class VSCodeLikeEditor:
         self.terminal.bind("<Control-c>", self.copy_terminal_text)
 
         # Terminal Entry Box (Input)
+        self.terminal_input_placeholder_text = "  [User input...]"
+        
         self.terminal_input = tk.Entry(self.terminal_frame, bg=self.TERMINAL_BG, fg=self.TERMINAL_FG, insertbackground="white", font=("Consolas", 14))
         self.terminal_input.pack(fill="x", padx=5, pady=5, ipady=5)
         self.terminal_input.bind("<Return>", self.execute_command)
+        self.terminal_input.insert(0, self.terminal_input_placeholder_text)
+        self.terminal_input.config(fg="gray")
+        self.terminal_input.bind("<FocusIn>", self.on_terminal_focus_in)
+        self.terminal_input.bind("<FocusOut>", self.on_terminal_focus_out)
         
 
         # Terminal Scrollbar
@@ -2415,8 +2464,8 @@ class VSCodeLikeEditor:
         self.line_numbers.delete("1.0", tk.END)
 
         total_lines = int(self.code_editor.index("end-1c").split(".")[0])
-        cursor_line = int(self.code_editor.index(tk.INSERT).split(".")[0])
 
+        cursor_line = int(self.code_editor.index(tk.INSERT).split(".")[0])
         self.code_editor.tag_remove("current_line", "1.0", tk.END)
         self.code_editor.tag_add("current_line", f"{cursor_line}.0", f"{cursor_line}.end+1c")
 
@@ -2435,19 +2484,11 @@ class VSCodeLikeEditor:
 
         self.line_numbers.config(state=tk.DISABLED)
 
-        # if not self.is_cursor_visible():
-        #     self.code_editor.see(tk.INSERT)
+        # **Ensure scrolling follows cursor position**
+        # self.code_editor.see(tk.INSERT)
 
         self.sync_scroll()  # Ensure scrolling is synced
-        # self.line_numbers.config(state=tk.DISABLED)
         self.root.after(1, self.auto_save)
-
-    def is_cursor_visible(self):
-        # Get the bounding box of the cursor position
-        bbox = self.code_editor.bbox(tk.INSERT)
-        
-        # If bbox exists, the cursor is visible in the viewport
-        return bbox is not None
 
     def fuzzy_match(self, typed_word, suggestions):
         """Find words that match `typed_word`, even if letters are missing."""
@@ -2464,7 +2505,7 @@ class VSCodeLikeEditor:
             matches = difflib.get_close_matches(typed_word, suggestions, n=10, cutoff=0.4)
 
         return matches if matches else suggestions
-
+    
     def on_shift_mouse_wheel(self, event):
         """Enables horizontal scrolling when Shift + Mouse Wheel is used."""
         self.code_editor.xview_scroll(-1 * (event.delta // 120), "units")
@@ -4609,6 +4650,15 @@ class VSCodeLikeEditor:
         except Exception as e:
             self.terminal_output(f"Navigation error: {str(e)}\n", error=True)
 
+    def on_terminal_focus_in(self, event):
+        if self.terminal_input.get() == self.terminal_input_placeholder_text:
+            self.terminal_input.delete(0, tk.END)
+            self.terminal_input.config(fg=self.TERMINAL_FG)  # Use your normal terminal FG color
+
+    def on_terminal_focus_out(self, event):
+        if not self.terminal_input.get():
+            self.terminal_input.insert(0, self.terminal_input_placeholder_text)
+            self.terminal_input.config(fg="gray")
 
 
 
@@ -5389,6 +5439,8 @@ if __name__ == "__main__":
         root = TkinterDnD.Tk()
         VSCodeLikeEditor(root)
         root.mainloop()
+
+
 
 
 
