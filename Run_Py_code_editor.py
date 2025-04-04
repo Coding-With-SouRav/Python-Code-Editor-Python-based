@@ -180,7 +180,7 @@ class VSCodeLikeEditor:
             self.overrideredirect(True)
             self.wm_attributes("-topmost", True)
             self.last_known_position = None
-
+            self.replacement_history = []
             self.replace_visible = False
 
             self.bind("<Unmap>", self.on_unmap)
@@ -248,7 +248,9 @@ class VSCodeLikeEditor:
             self.find_entry.bind("<FocusIn>", self.on_find_focus_in)
             self.find_entry.bind("<FocusOut>", self.on_find_focus_out)
             self.find_entry.bind("<Return>", self.jump_to_next_match)
-           
+            self.find_entry.bind("<Up>", lambda e: self.toggle_replace())
+            self.find_entry.bind("<Down>", lambda e: self.toggle_replace())
+
             # Replace Frame
             self.replace_frame = tk.Frame(self, bg=editor.BLACK)
 
@@ -268,8 +270,9 @@ class VSCodeLikeEditor:
             self.replace_entry.bind("<FocusOut>", self.on_replace_focus_out)
 
             self.replace_entry.bind("<Return>", self.replace_next)
-            self.find_entry.bind("<Up>", lambda e: self.toggle_replace())
-            self.find_entry.bind("<Down>", lambda e: self.toggle_replace())
+            self.replace_entry.bind("<Down>", self.replace_next)
+            self.replace_entry.bind("<Up>", self.restore_previous_text)
+            
             
            
             self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -484,7 +487,7 @@ class VSCodeLikeEditor:
                 # Move cursor to end of replacement
                 new_pos = f"{match_pos}+{len(replace_text)}c"
                 editor.code_editor.tag_add("replaced", match_pos, new_pos)
-                editor.code_editor.tag_config("replaced", background="green")
+                editor.code_editor.tag_config("replaced", background="#9fffb8", foreground="black") #green
                 editor.code_editor.tag_raise("replaced")  # Ensure it's above other tags
                 editor.code_editor.mark_set(tk.INSERT, new_pos)
                 editor.code_editor.see(new_pos)
@@ -492,6 +495,11 @@ class VSCodeLikeEditor:
                 # Store current match position
                 self.current_match = new_pos
                 self.highlight_matches()
+                self.replacement_history.append({
+                    'start': match_pos,
+                    'find': find_text,
+                    'replace': replace_text
+                })
             else:
                 if not self.current_match:
                     messagebox.showinfo("Replace", "Text not found", parent=self)
@@ -500,6 +508,42 @@ class VSCodeLikeEditor:
                     messagebox.showinfo("Replace", "No more occurrences", parent=self)
                     self.current_match = None
                 editor.code_editor.tag_remove("match", "1.0", tk.END)
+
+        def restore_previous_text(self, event=None):
+
+            if not self.replacement_history:
+                return
+            
+            editor = self.editor
+            # Get last replacement info
+            last_replace = self.replacement_history.pop()
+            
+            start_pos = last_replace['start']
+            original_find = last_replace['find']
+            original_replace = last_replace['replace']
+            
+            # Calculate positions
+            end_pos = f"{start_pos}+{len(original_replace)}c"
+            
+            # Restore original text
+            editor.code_editor.delete(start_pos, end_pos)
+            editor.code_editor.insert(start_pos, original_find)
+            
+            # Update syntax highlighting
+            self.editor.highlight_syntax()
+            self.highlight_matches()
+            
+            # Update current match position
+            new_pos = f"{start_pos}+{len(original_find)}c"
+            editor.code_editor.mark_set(tk.INSERT, new_pos)
+            editor.code_editor.see(new_pos)
+            
+            # Remove highlight
+            editor.code_editor.tag_remove("replaced", start_pos, end_pos)
+            
+            # Update current match to allow continued operations
+            self.current_match = new_pos
+            # self.jump_to_next_match() 
 
         def on_find_focus_in(self, event):
             if self.find_entry.get() == "Find":
