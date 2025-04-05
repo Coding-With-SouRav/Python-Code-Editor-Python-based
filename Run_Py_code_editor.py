@@ -35,7 +35,12 @@ def resource_path(relative_path):
     except Exception:
         base_path = os.path.abspath(".")
 
-    full_path = os.path.join(base_path, relative_path)
+    # Handle nested icon paths
+    if 'icons' in relative_path:
+        full_path = os.path.join(base_path, relative_path.replace('\\', os.sep))
+    else:
+        full_path = os.path.join(base_path, relative_path)
+        
     if not os.path.exists(full_path):
         raise FileNotFoundError(f"Resource not found: {full_path}")
     return full_path
@@ -502,10 +507,10 @@ class VSCodeLikeEditor:
                 })
             else:
                 if not self.current_match:
-                    messagebox.showinfo("Replace", "Text not found", parent=self)
+                    pass
                 else:
                     # After wrapping around
-                    messagebox.showinfo("Replace", "No more occurrences", parent=self)
+                    pass
                     self.current_match = None
                 editor.code_editor.tag_remove("match", "1.0", tk.END)
 
@@ -607,7 +612,6 @@ class VSCodeLikeEditor:
                 visible_lines = editor_height // line_height
                 target_line = max(1, line - (visible_lines-12) // 2)
                 self.editor.code_editor.see(f"{target_line}.0")
-
             
     def __init__(self, root):
         self.BLACK = 'black'
@@ -694,6 +698,7 @@ class VSCodeLikeEditor:
         if getattr(sys, 'frozen', False):
             sys.path.append(os.path.join(sys._MEIPASS, 'jedi'))
             sys.path.append(os.path.join(sys._MEIPASS, 'parso'))
+            os.environ['JEDI_CACHE'] = os.path.join(sys._MEIPASS, 'jedi', 'cache')
         self.auto_save()
 
     def load_images(self):
@@ -1206,6 +1211,8 @@ class VSCodeLikeEditor:
         self.terminal.tag_config("ai", foreground="#00ff00")
         self.terminal.bind("<Control-C>", self.copy_terminal_text)
         self.terminal.bind("<Control-c>", self.copy_terminal_text)
+        self.terminal.drop_target_register(DND_FILES)
+        self.terminal.dnd_bind('<<Drop>>', self.handle_external_drop)
 
         # Terminal Entry Box (Input)
         self.terminal_input_placeholder_text = "  [User input...]"
@@ -1217,6 +1224,8 @@ class VSCodeLikeEditor:
         self.terminal_input.config(fg="gray")
         self.terminal_input.bind("<FocusIn>", self.on_terminal_focus_in)
         self.terminal_input.bind("<FocusOut>", self.on_terminal_focus_out)
+        self.terminal_input.drop_target_register(DND_FILES)
+        self.terminal_input.dnd_bind('<<Drop>>', self.handle_external_drop)
         
 
         # Terminal Scrollbar
@@ -1352,6 +1361,8 @@ class VSCodeLikeEditor:
         self.code_editor.bind("<Button-1>", self.handle_mouse_click)
         self.code_editor.after(1, self._highlight_syntax)
         self.code_editor.bind("<Control-Button-1>", self.jump_to_definition)
+        self.code_editor.drop_target_register(DND_FILES)
+        self.code_editor.dnd_bind('<<Drop>>', self.handle_external_drop)
                 
 
         # Keyboard Shortcuts
@@ -1396,6 +1407,8 @@ class VSCodeLikeEditor:
         self.root.bind("<Control-Shift-C>", self.terminal_delete_clear)
         self.root.bind("<Control-Shift-asciitilde>", self.open_new_terminal)
         self.root.bind("<F9>", self.open_search_bar)
+        self.root.drop_target_register(DND_FILES)
+        self.root.dnd_bind('<<Drop>>', self.handle_external_drop)
     
     def show_scrollbars(self,event):
         self.horizontal_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -2564,7 +2577,8 @@ class VSCodeLikeEditor:
             script = jedi.Script(
                 code=self.code_editor.get("1.0", tk.END),
                 path=self.current_file or 'temp.py',
-                environment=env
+                environment=env,
+                sys_path=[sys._MEIPASS, os.path.join(sys._MEIPASS, 'jedi')]
             )
         else:
             script = jedi.Script(code=self.code_editor.get("1.0", tk.END))
@@ -4705,7 +4719,8 @@ class VSCodeLikeEditor:
             self.terminal_input.config(fg="gray")
 
 
-
+    # themes
+    
     def change_dark_blue_theme(self,e = None):
     
         BACK_GROUND = "#001a33" 
