@@ -3271,12 +3271,16 @@ class VSCodeLikeEditor:
         item = self.file_tree.identify_row(event.y)
         if item:
             self.file_tree.selection_set(item)
-            menu = tk.Menu(self.root, tearoff=0)
+            menu = tk.Menu(self.root, tearoff=0, bg=self.BLACK, fg="white", font=("Consolas", 12, 'italic'))
             menu.add_command(label="Cut         Ctrl+X", command=self.cut_items)
-            menu.add_command(label="Copy      Ctrl+C", command=self.copy_items)
-            menu.add_command(label="Paste     Ctrl+V", command=self.paste_items)
+            menu.add_command(label="Copy        Ctrl+C", command=self.copy_items)
+            menu.add_command(label="Paste       Ctrl+V", command=self.paste_items)
+            menu.add_separator()
+            menu.add_command(label="Copy Relative Path", command=self.copy_relative_path)
+            menu.add_command(label="Copy Full Path", command=self.copy_full_path)
             menu.add_separator()
             menu.add_command(label="Rename", command=self.rename_item)
+            menu.add_command(label="Delete", command=self.delete_items)
             menu.post(event.x_root, event.y_root)
 
     def rename_item(self):
@@ -4718,6 +4722,28 @@ class VSCodeLikeEditor:
             self.terminal_input.insert(0, self.terminal_input_placeholder_text)
             self.terminal_input.config(fg="gray")
 
+    def copy_relative_path(self):
+        selected_item = self.file_tree.selection()
+        if not selected_item:
+            return
+        item = selected_item[0]
+        values = self.file_tree.item(item, "values")
+        if values and values[0] and self.folder_path:
+            full_path = values[0]
+            relative_path = os.path.relpath(full_path, self.folder_path)
+            pyperclip.copy(relative_path)
+            self.terminal_output(f"Copied relative path: {relative_path}\n")
+
+    def copy_full_path(self):
+        selected_item = self.file_tree.selection()
+        if not selected_item:
+            return
+        item = selected_item[0]
+        values = self.file_tree.item(item, "values")
+        if values and values[0]:
+            full_path = values[0]
+            pyperclip.copy(full_path)
+            self.terminal_output(f"Copied full path: {full_path}\n")
 
     # themes
     
