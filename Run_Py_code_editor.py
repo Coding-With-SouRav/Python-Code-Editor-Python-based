@@ -1213,6 +1213,8 @@ class VSCodeLikeEditor:
         self.terminal.bind("<Control-c>", self.copy_terminal_text)
         self.terminal.drop_target_register(DND_FILES)
         self.terminal.dnd_bind('<<Drop>>', self.handle_external_drop)
+        self.terminal.config(yscrollcommand=lambda *args: self.terminal_scrollbar.set())
+        self.terminal.bind("<Configure>", lambda e: self.terminal.see(tk.END))
 
         # Terminal Entry Box (Input)
         self.terminal_input_placeholder_text = "  [User input...]"
@@ -2418,6 +2420,7 @@ class VSCodeLikeEditor:
             return 'break'
 
         self.terminal_output(f">>> {command}\n", error=False)
+        self.terminal.see(tk.END)
         self.run_button.pack_forget()
         self.stop_button.pack(side=tk.RIGHT, padx=5, pady=5)
 
@@ -3221,7 +3224,7 @@ class VSCodeLikeEditor:
         try:
             for line in iter(stream.readline, ''):
                 self.terminal_output(line, error)
-
+                self.terminal.see(tk.END)
                 # Check if the process is requesting input (common prompts end with colon)
                 if line.strip().endswith(":") or "input" in line.lower():
                     self.terminal_input.config(state='normal')
