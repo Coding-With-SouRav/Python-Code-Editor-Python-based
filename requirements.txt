@@ -1,6 +1,6 @@
-pip install astunparse  
-pip install watchdog  
-pip install jedi  
-pip install pillow  
-pip install pyperclip  
-pip install google-generativeai  
+pip install pillow
+pip install jedi
+pip install watchdog
+pip install pyperclip
+pip install google-generativeai
+pip install tkinterdnd2
