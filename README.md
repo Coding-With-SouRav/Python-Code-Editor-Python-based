@@ -1,4 +1,4 @@
-VSCode-Like Python Editor: Feature Overview
+# VSCode-Like Python Editor: Feature Overview
 
 Core Features
 Code Editing
@@ -99,3 +99,24 @@ Git integration for version control.
 Customizable keybindings via JSON/INI.
 
 This editor combines core code-editing tools with advanced features like AI assistance and terminal integration, aiming to replicate a lightweight VSCode experience optimized for Python development.
+
+# Demo UI (Image)
+
+
+![Screenshot 2025-04-19 204608](https://github.com/user-attachments/assets/aabfff9d-9adb-4c8a-944a-5200f259b4d9)
+
+![Screenshot 2025-04-19 204506](https://github.com/user-attachments/assets/935d82ad-52a7-40e9-a078-1c5877bacf36)
+
+![Screenshot 2025-04-19 204433](https://github.com/user-attachments/assets/e39fad1c-fb30-44b9-af3e-21bdae1bf1d4)
+
+![Screenshot 2025-04-19 204403](https://github.com/user-attachments/assets/979fcf06-4845-4930-ae45-b1bf9e49bb5e)
+
+![Screenshot 2025-04-19 205201](https://github.com/user-attachments/assets/4c41b625-1e17-4662-a469-df85141f86aa)
+
+![Screenshot 2025-04-19 204916](https://github.com/user-attachments/assets/e046b573-1e2d-4fa1-a35b-f438086e220c)
+
+![Screenshot 2025-04-19 204842](https://github.com/user-attachments/assets/35be98f4-1788-485f-947d-3a237a3785c1)
+
+![Screenshot 2025-04-19 204738](https://github.com/user-attachments/assets/8ccab2cc-528d-437b-a5fb-020b379be25e)
+
+![Screenshot 2025-04-19 204631](https://github.com/user-attachments/assets/2b572f0c-aef4-44eb-acf1-b3ddc6130a48)
