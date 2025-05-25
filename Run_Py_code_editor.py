@@ -23,27 +23,29 @@ import pyperclip
 import google.generativeai as genai
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import tkinter.font
+
 def resource_path(relative_path):
     """ Get absolute path to resources for both dev and PyInstaller """
     try:
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(".")
-    if 'icons' in relative_path:
-        full_path = os.path.join(base_path, relative_path.replace('\\', os.sep))
-    else:
-        full_path = os.path.join(base_path, relative_path)
+    full_path = os.path.join(base_path, relative_path)
     if not os.path.exists(full_path):
         raise FileNotFoundError(f"Resource not found: {full_path}")
     return full_path
+
 class VSCodeLikeEditor:
     class FileChangeHandler(FileSystemEventHandler):
+
         def __init__(self, editor):
             super().__init__()
             self.editor = editor
+
         def on_any_event(self, event):
             self.editor.should_update = True
     class CustomInputDialog(tk.Toplevel):
+
         def __init__(self,editor, parent, title, prompt):
             super().__init__(parent)
             self.editor = editor
@@ -67,16 +69,20 @@ class VSCodeLikeEditor:
             self.cancel_button.pack(side=tk.LEFT, padx=5)
             self.geometry("+%d+%d" % (parent.winfo_rootx()+50, parent.winfo_rooty()+50))
             self.grab_set()
+
         def ok_pressed(self):
             self.result = self.entry.get()
             self.destroy()
+
         def cancel_pressed(self):
             self.result = None
             self.destroy()
+
         def show(self):
             self.wait_window()
             return self.result
     class ToolTip:
+
         def __init__(self, editor, widget, text):
             self.editor = editor
             self.widget = widget
@@ -84,6 +90,7 @@ class VSCodeLikeEditor:
             self.tipwindow = None
             self.widget.bind("<Enter>", self.showtip)
             self.widget.bind("<Leave>", self.hidetip)
+
         def showtip(self, event=None):
             if self.tipwindow:
                 return
@@ -94,11 +101,13 @@ class VSCodeLikeEditor:
             tw.wm_geometry(f"+{x}+{y}")
             self.ToolTip_label = tk.Label(tw, text=self.text, bg=self.editor.BLACK, fg="#ffff00", font=("Consolas", 11, "italic"))
             self.ToolTip_label.pack()
+
         def hidetip(self, event=None):
             if self.tipwindow:
                 self.tipwindow.destroy()
             self.tipwindow = None
     class ReverseToolTip:
+
         def __init__(self,editor, widget, text):
             self.editor = editor
             self.widget = widget
@@ -106,6 +115,7 @@ class VSCodeLikeEditor:
             self.tipwindow = None
             self.widget.bind("<Enter>", self.showtip)
             self.widget.bind("<Leave>", self.hidetip)
+
         def showtip(self, event=None):
             if self.tipwindow:
                 return
@@ -116,11 +126,13 @@ class VSCodeLikeEditor:
             tw.wm_geometry(f"+{x}+{y}")
             self.ReverseToolTip_label = tk.Label(tw, text=self.text, bg=self.editor.BLACK, fg="#ffff00", font=("Consolas", 11, "italic"))
             self.ReverseToolTip_label.pack()
+
         def hidetip(self, event=None):
             if self.tipwindow:
                 self.tipwindow.destroy()
             self.tipwindow = None
     class Toggle_replace_btn_ToolTip:
+
         def __init__(self, editor, widget, text):
             self.editor = editor
             self.widget = widget
@@ -128,6 +140,7 @@ class VSCodeLikeEditor:
             self.tipwindow = None
             self.widget.bind("<Enter>", self.showtip)
             self.widget.bind("<Leave>", self.hidetip)
+
         def showtip(self, event=None):
             if self.tipwindow:
                 return
@@ -138,11 +151,13 @@ class VSCodeLikeEditor:
             tw.wm_geometry(f"+{x}+{y}")
             self.ToolTip_label = tk.Label(tw, text=self.text, bg=self.editor.BLACK, fg="#ffff00", font=("Consolas", 11, "italic"))
             self.ToolTip_label.pack()
+
         def hidetip(self, event=None):
             if self.tipwindow:
                 self.tipwindow.destroy()
             self.tipwindow = None
     class ReplaceDialog(tk.Toplevel):
+
         def __init__(self, editor):
             super().__init__(editor.root)
             self.editor = editor
@@ -229,6 +244,7 @@ class VSCodeLikeEditor:
             self.find_entry.bind("<KeyRelease>", self.highlight_matches)
             self.find_entry.bind("<KeyPress>", self.highlight_matches)
             self.update_position()
+
         def toggle_replace(self):
             self.replace_visible = not self.replace_visible
             if self.replace_visible:
@@ -240,10 +256,12 @@ class VSCodeLikeEditor:
             self.update_idletasks()
             self.update_position()
             self.geometry("")
+
         def on_main_window_focus(self, event=None):
             """Bring replace dialog to front when main window gets focus"""
             if self.winfo_exists():
                 self.lift()
+
         def update_position(self, e = None):
             if not self.winfo_exists():
                 return
@@ -267,6 +285,7 @@ class VSCodeLikeEditor:
                 y = max(main_y, ed_y - dlg_height - 20)
             self.geometry(f"+{int(x)}+{int(y)}")
             self.deiconify()
+
         def update_theme(self, event=None):
             if not self.winfo_exists():
                 return
@@ -280,11 +299,14 @@ class VSCodeLikeEditor:
             self.match_count_label.configure(bg=self.editor.BLACK)
             self.toggle_button.configure(bg=self.editor.BLACK, activebackground= self.editor.BLACK)
             self.close_replace_btn.configure(bg=self.editor.BLACK, activebackground= self.editor.BLACK)
+
         def on_unmap(self, event):
             if self.editor.root.state() == 'iconic':
                 return
+
         def on_map(self, event = None):
             self.update_position()
+
         def highlight_matches(self, event=None):
             self.editor.code_editor.tag_remove("search_highlight", "1.0", tk.END)
             find_text = self.find_entry.get().strip()
@@ -319,6 +341,7 @@ class VSCodeLikeEditor:
                 background="yellow",
                 foreground="black"
             )
+
         def on_close(self):
             self.editor.code_editor.tag_remove("search_highlight", "1.0", tk.END)
             self.editor.code_editor.tag_remove("current_match", "1.0", tk.END)
@@ -327,6 +350,7 @@ class VSCodeLikeEditor:
             self.destroy()
             if hasattr(self.editor, 'replace_dialog'):
                 del self.editor.replace_dialog
+
         def find_next_match(self, start_pos):
             find_text = self.find_entry.get()
             if not find_text:
@@ -353,6 +377,7 @@ class VSCodeLikeEditor:
                     regexp=False
                 )
             return match_pos
+
         def replace_next(self, event=None):
             find_text = self.find_entry.get().strip()
             if find_text == "Find" and self.find_entry.cget('fg') == 'gray':
@@ -396,6 +421,7 @@ class VSCodeLikeEditor:
                     pass
                     self.current_match = None
                 editor.code_editor.tag_remove("match", "1.0", tk.END)
+
         def restore_previous_text(self, event=None):
             if not self.replacement_history:
                 return
@@ -414,24 +440,29 @@ class VSCodeLikeEditor:
             editor.code_editor.see(new_pos)
             editor.code_editor.tag_remove("replaced", start_pos, end_pos)
             self.current_match = new_pos
+
         def on_find_focus_in(self, event):
             if self.find_entry.get() == "Find":
                 self.find_entry.delete(0, tk.END)
                 self.find_entry.config(fg='white', font=('Consolas', 12))
+
         def on_find_focus_out(self, event):
             if not self.find_entry.get():
                 self.find_entry.insert(0, "Find")
                 self.find_entry.config(fg='gray', font=('Consolas', 12, 'italic'))
             else:
                 self.find_entry.config(fg='white', font=('Consolas', 12))
+
         def on_replace_focus_in(self, event):
             if self.replace_entry.get() == "Replace":
                 self.replace_entry.delete(0, tk.END)
                 self.replace_entry.config(fg='white', font=('Consolas', 12))
+
         def on_replace_focus_out(self, event):
             if not self.replace_entry.get():
                 self.replace_entry.insert(0, "Replace")
                 self.replace_entry.config(fg='gray', font=('Consolas', 12, 'italic'))
+
         def jump_to_next_match(self, event=None):
             """Moves cursor to the next highlighted match and centers it"""
             find_text = self.find_entry.get().strip()
@@ -459,6 +490,7 @@ class VSCodeLikeEditor:
                 visible_lines = editor_height // line_height
                 target_line = max(1, line - (visible_lines-12) // 2)
                 self.editor.code_editor.see(f"{target_line}.0")
+
     def __init__(self, root):
         self.BLACK = 'black'
         self.CYAN = 'cyan'
@@ -532,8 +564,8 @@ class VSCodeLikeEditor:
         if getattr(sys, 'frozen', False):
             sys.path.append(os.path.join(sys._MEIPASS, 'jedi'))
             sys.path.append(os.path.join(sys._MEIPASS, 'parso'))
-            os.environ['JEDI_CACHE'] = os.path.join(sys._MEIPASS, 'jedi', 'cache')
         self.auto_save()
+
     def load_images(self):
         self.window_icon_path = resource_path(r"icons\app_icon.ico")
         self.root.iconbitmap(self.window_icon_path)
@@ -564,6 +596,7 @@ class VSCodeLikeEditor:
         self.black_img = Image.open(resource_path(r"icons\black_theme.png")).resize((30, 28))
         self.dark_green_img = Image.open(resource_path(r"icons\dark_green_theme.png")).resize((26, 30))
         self.dark_gray_img = Image.open(resource_path(r"icons\dark_gray_theme.png")).resize((23, 23))
+        
         self.bg_photo = ImageTk.PhotoImage(self.bg_img)
         self.file_explorer_icon = ImageTk.PhotoImage(self.file_explorer_img)
         self.search_icon = ImageTk.PhotoImage(self.search_img)
@@ -591,6 +624,7 @@ class VSCodeLikeEditor:
         self.black_icon = ImageTk.PhotoImage(self.black_img)
         self.dark_green_icon = ImageTk.PhotoImage(self.dark_green_img)
         self.dark_gray_icon = ImageTk.PhotoImage(self.dark_gray_img)
+
     def init_ui(self):
         self.top_frame = tk.Frame(self.root, bg=self.BLACK)
         self.top_frame.pack(fill=tk.X, side="top")
@@ -954,10 +988,6 @@ class VSCodeLikeEditor:
         self.terminal.tag_config("ai", foreground="#00ff00")
         self.terminal.bind("<Control-C>", self.copy_terminal_text)
         self.terminal.bind("<Control-c>", self.copy_terminal_text)
-        self.terminal.drop_target_register(DND_FILES)
-        self.terminal.dnd_bind('<<Drop>>', self.handle_external_drop)
-        self.terminal.config(yscrollcommand=lambda *args: self.terminal_scrollbar.set())
-        self.terminal.bind("<Configure>", lambda e: self.terminal.see(tk.END))
         self.terminal_input_placeholder_text = "  [User input...]"
         self.terminal_input = tk.Entry(self.terminal_frame, bg=self.TERMINAL_BG, fg=self.TERMINAL_FG, insertbackground="white", font=("Consolas", 14))
         self.terminal_input.pack(fill="x", padx=5, pady=5, ipady=5)
@@ -966,8 +996,6 @@ class VSCodeLikeEditor:
         self.terminal_input.config(fg="gray")
         self.terminal_input.bind("<FocusIn>", self.on_terminal_focus_in)
         self.terminal_input.bind("<FocusOut>", self.on_terminal_focus_out)
-        self.terminal_input.drop_target_register(DND_FILES)
-        self.terminal_input.dnd_bind('<<Drop>>', self.handle_external_drop)
         self.terminal_scrollbar = ttk.Scrollbar(self.terminal, orient=tk.VERTICAL, command=self.terminal.yview, cursor='arrow')
         self.terminal.config(yscrollcommand=self.terminal_scrollbar.set)
         self.terminal_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
@@ -1075,8 +1103,6 @@ class VSCodeLikeEditor:
         self.code_editor.bind("<Button-1>", self.handle_mouse_click)
         self.code_editor.after(1, self._highlight_syntax)
         self.code_editor.bind("<Control-Button-1>", self.jump_to_definition)
-        self.code_editor.drop_target_register(DND_FILES)
-        self.code_editor.dnd_bind('<<Drop>>', self.handle_external_drop)
         self.root.bind("<Control-o>", self.open_file)
         self.root.bind("<Control-O>", self.open_file)
         self.root.bind("<Control-s>", self.save_file)
@@ -1118,14 +1144,15 @@ class VSCodeLikeEditor:
         self.root.bind("<Control-Shift-C>", self.terminal_delete_clear)
         self.root.bind("<Control-Shift-asciitilde>", self.open_new_terminal)
         self.root.bind("<F9>", self.open_search_bar)
-        self.root.drop_target_register(DND_FILES)
-        self.root.dnd_bind('<<Drop>>', self.handle_external_drop)
+
     def show_scrollbars(self,event):
         self.horizontal_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
     def hide_scrollbars(self,event):
         self.horizontal_scrollbar.pack_forget()
         self.scrollbar.pack_forget()
+
     def on_close(self):
         self.save_window_geometry()
         self.stop_code()
@@ -1154,6 +1181,7 @@ class VSCodeLikeEditor:
             except:
                 pass
         self.root.destroy()
+
     def load_window_geometry(self):
         if os.path.exists(self.config_file):
             config = configparser.ConfigParser()
@@ -1169,6 +1197,7 @@ class VSCodeLikeEditor:
                     self.root.state("zoomed")
                 elif state == "iconic":
                     self.root.iconify()
+
     def save_window_geometry(self):
         config = configparser.ConfigParser()
         config["Geometry"] = {
@@ -1177,6 +1206,7 @@ class VSCodeLikeEditor:
         }
         with open(self.config_file, "w") as f:
             config.write(f)
+
     def open_file(self, event=None):
         file_path = filedialog.askopenfilename(filetypes=[("Python Files", "*.py"), ("All Files", "*.*")])
         if file_path:
@@ -1193,6 +1223,7 @@ class VSCodeLikeEditor:
             self.update_line_numbers()
             self.highlight_syntax()
             self.auto_save()
+
     def open_file_from_tree(self, event):
         if self.ctrl_shift_pressed_during_click:
             self.ctrl_shift_pressed_during_click = False
@@ -1219,6 +1250,7 @@ class VSCodeLikeEditor:
             except tk.TclError as e:
                 print(f"Ignoring invalid item: {str(e)}")
                 continue
+
     def load_file(self, filepath):
         if not os.path.exists(filepath):
             self.terminal_output(f"[✖] File not found: {os.path.basename(filepath)}\n", error=True)
@@ -1236,6 +1268,7 @@ class VSCodeLikeEditor:
             self.code_editor.edit_modified(False)
         except UnicodeDecodeError:
             self.terminal_output(f"[✖] Cannot open '{os.path.basename(filepath)}'...\n", error=True)
+
     def save_file(self, event=None):
         if self.current_file:
             with open(self.current_file, "w", encoding="utf-8") as file:
@@ -1244,6 +1277,7 @@ class VSCodeLikeEditor:
         else:
             self.save_as_file()
         return 'break'
+
     def save_as_file(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".py", filetypes=[("Python Files", "*.py"), ("All Files", "*.*")])
         self.filename_label.config(text=os.path.basename(file_path))
@@ -1252,6 +1286,7 @@ class VSCodeLikeEditor:
                 file.write(self.code_editor.get("1.0", tk.END))
             self.current_file = file_path
             self.root.title(f"Python Editor - {os.path.basename(file_path)}")
+
     def auto_save(self, event=None):
         if not self.code_editor.edit_modified():
             return
@@ -1262,9 +1297,11 @@ class VSCodeLikeEditor:
             except Exception as e:
                 pass
         self.root.after(500, self.auto_save)
+
     def update_layout(self):
         """Ensure scrollbar remains visible after resizing the font."""
         self.root.update_idletasks()
+
     def increase_text_size(self, event=None):
         """Increase font size and ensure scrollbar stays visible."""
         size = min(40, self.font_style[1] + 1)
@@ -1272,6 +1309,7 @@ class VSCodeLikeEditor:
         self.code_editor.config(font=self.font_style)
         self.line_numbers.config(font=self.font_style)
         self.update_layout()
+
     def decrease_text_size(self, event=None):
         """Decrease font size and ensure scrollbar stays visible."""
         size = max(10, self.font_style[1] - 1)
@@ -1279,12 +1317,15 @@ class VSCodeLikeEditor:
         self.code_editor.config(font=self.font_style)
         self.line_numbers.config(font=self.font_style)
         self.update_layout()
+
     def select_all(self, event=None):
         self.code_editor.tag_add("sel", "1.0", tk.END)
         return "break"
+
     def deselect_all(self, event):
         """Deselect text when clicking outside."""
         self.code_editor.tag_remove("sel", "1.0", "end")
+
     def copy_text(self, event=None):
         try:
             if self.code_editor.tag_ranges(tk.SEL):
@@ -1297,6 +1338,7 @@ class VSCodeLikeEditor:
         except tk.TclError:
             pass
         return "break"
+
     def copy_terminal_text(self, event=None):
         try:
             if self.terminal.tag_ranges(tk.SEL):
@@ -1309,6 +1351,7 @@ class VSCodeLikeEditor:
         except tk.TclError:
             pass
         return "break"
+
     def cut_text(self, event=None):
         try:
             if self.code_editor.tag_ranges(tk.SEL):
@@ -1322,6 +1365,7 @@ class VSCodeLikeEditor:
         except tk.TclError:
             pass
         return "break"
+
     def paste_text(self, event=None):
         try:
             clipboard_text = self.root.clipboard_get()
@@ -1330,12 +1374,15 @@ class VSCodeLikeEditor:
         except tk.TclError:
             pass
         return "break"
+
     def exit_editor(self):
         self.root.quit()
+
     def highlight_syntax(self):
         if self.highlight_timer:
             self.root.after_cancel(self.highlight_timer)
         self.highlight_timer = self.root.after(200, self._highlight_syntax)
+
     def _highlight_syntax(self):
         if not hasattr(self, "_scroll_binding_added"):
             self._scroll_binding_added = True
@@ -1474,6 +1521,7 @@ class VSCodeLikeEditor:
                     else:
                         color = bracket_colors[level_after_pop % len(bracket_colors)]
                         self.code_editor.tag_add(color, pos, f"{pos}+1c")
+
     def on_text_change(self, event=None):
         if hasattr(self, 'replace_dialog') and self.replace_dialog.winfo_exists():
             self.replace_dialog.highlight_matches()
@@ -1488,6 +1536,7 @@ class VSCodeLikeEditor:
         self.schedule_import_check()
         if hasattr(self, 'replace_dialog') and self.replace_dialog.winfo_exists():
             self.replace_dialog.highlight_matches()
+
     def _perform_updates(self):
         self.highlight_syntax()
         self.update_line_numbers()
@@ -1496,9 +1545,11 @@ class VSCodeLikeEditor:
         if hasattr(self, 'search_window') and self.search_window.winfo_exists():
             if self.text_search_entry.get().strip() != "Search":
                 self.real_time_search()
+
     def get_line_column(self, index):
         line = self.code_editor.index(f"1.0+{index}c").split(".")
         return int(line[0]), int(line[1])
+
     def safe_undo(self, event=None):
         if not self.undo_stack:
             return
@@ -1523,6 +1574,7 @@ class VSCodeLikeEditor:
             except Exception as e:
                 self.terminal_output(f"Undo Error - {str(e)}\n",error= True)
             self.update_file_tree(self.folder_path)
+
     def safe_redo(self, event=None):
         if not self.redo_stack:
             return
@@ -1558,9 +1610,11 @@ class VSCodeLikeEditor:
                 self.terminal_output(f"Redo Erro - {str(e)}\n",error= True)
                 pass
             self.update_file_tree(self.folder_path)
+
     def on_key_press(self, event):
         """Force Tkinter to treat each keypress as a separate undo action."""
         self.code_editor.edit_separator()
+
     def auto_indent(self, event=None):
         """Handles indentation when pressing Enter."""
         cursor_position = self.code_editor.index(tk.INSERT)
@@ -1581,6 +1635,7 @@ class VSCodeLikeEditor:
         else:
             self.code_editor.insert(tk.INSERT, "\n" + current_indent)
         return "break"
+
     def sync_scroll(self, *args):
         """Syncs line numbers with text editor scrolling."""
         self.line_numbers.yview_moveto(self.code_editor.yview()[0])
@@ -1591,17 +1646,20 @@ class VSCodeLikeEditor:
         else:
             self.line_numbers.yview_moveto(self.code_editor.yview()[0])
         self.highlight_syntax()
+
     def on_mouse_wheel(self, event):
         """Sync mouse wheel scrolling for both text editor and line numbers."""
         self.code_editor.yview_scroll(int(-1 * (event.delta / 120)), "units")
         self.line_numbers.yview_scroll(int(-1 * (event.delta / 120)), "units")
         return "break"
+
     def shift_tab(self, event=None):
         cursor_position = self.code_editor.index(tk.INSERT)
         line_content = self.code_editor.get(cursor_position + " linestart", cursor_position)
         if line_content.startswith("    "):
             self.code_editor.delete(cursor_position + " linestart", cursor_position + " linestart + 4 chars")
         return "break"
+
     def auto_complete(self, event):
         pairs = {"(": ")", "[": "]", "{": "}", "'": "'", '"': '"'}
         char = event.char
@@ -1609,6 +1667,7 @@ class VSCodeLikeEditor:
             self.code_editor.insert(tk.INSERT, pairs[char])
             self.code_editor.mark_set("insert", "insert-1c")
         return "break"
+
     def toggle_comment(self, event=None):
         if self.code_editor.tag_ranges("sel"):
             start_index = self.code_editor.index("sel.first")
@@ -1649,6 +1708,7 @@ class VSCodeLikeEditor:
         if self.code_editor.tag_ranges("sel"):
             self.code_editor.tag_add("sel", start_index, end_index)
         return "break"
+
     def deselect_and_move_cursor(self, event):
         """Deselects text and moves cursor properly."""
         if self.code_editor.tag_ranges("sel"):
@@ -1667,6 +1727,7 @@ class VSCodeLikeEditor:
             self.code_editor.tag_remove("sel", "1.0", "end")
             self.code_editor.config(insertontime=500)
             return "break"
+
     def select_word_inside_special_chars(self, event):
         """Selects only the word inside surrounding special characters, ignoring dots and special symbols."""
         cursor_index = self.code_editor.index(tk.CURRENT)
@@ -1684,6 +1745,7 @@ class VSCodeLikeEditor:
                 self.code_editor.tag_add("sel", actual_start, actual_end)
                 return "break"
         return None
+
     def run_code(self):
         if not self.vertical_pane.panes() or self.terminal_frame not in self.vertical_pane.panes():
             self.vertical_pane.add(self.terminal_frame, height=270)
@@ -1735,6 +1797,7 @@ class VSCodeLikeEditor:
         threading.Thread(target=self.read_output_stream, args=(self.process.stdout, False), daemon=True).start()
         threading.Thread(target=self.read_output_stream, args=(self.process.stderr, True), daemon=True).start()
         self.check_process_status()
+
     def terminal_output(self, text, error=False):
         """Updates the terminal with new text."""
         self.terminal.config(state="normal")
@@ -1749,6 +1812,7 @@ class VSCodeLikeEditor:
             self.terminal.tag_bind(tag_name, "<Control-Button-1>", lambda e, ln=line_number: self.goto_error_line(ln))
         self.terminal.see(tk.END)
         self.terminal.config(state="disabled")
+
     def goto_error_line(self, line_number):
         """Moves cursor to the specified error line in the code editor."""
         try:
@@ -1761,6 +1825,7 @@ class VSCodeLikeEditor:
             self.root.after(1000, lambda: self.code_editor.tag_remove("error_highlight", line_index, f"{line_number}.end"))
         except Exception as e:
             print(f"Error navigating to line {line_number}: {e}")
+
     def stop_code(self):
         """Terminate all processes and their child processes forcefully"""
         for process in self.active_processes:
@@ -1783,6 +1848,7 @@ class VSCodeLikeEditor:
         self.run_button.pack(side=tk.RIGHT, padx=5, pady=5)
         self.terminal_input.config(state='normal')
         self.root.config(cursor="")
+
     def update_file_tree(self, path, parent="",restore_expanded=True):
         if not path:
             return
@@ -1870,6 +1936,7 @@ class VSCodeLikeEditor:
             self.file_tree.insert(parent, "end", text="(Empty Folder)", values=[""], tags=("placeholder",))
         if restore_expanded:
             self.restore_expanded_paths(expanded_paths)
+
     def execute_command(self, event=None):
         command = self.terminal_input.get().strip()
         self.terminal_input.delete(0, tk.END)
@@ -1891,7 +1958,6 @@ class VSCodeLikeEditor:
             self.terminal.config(state="disabled")
             return 'break'
         self.terminal_output(f">>> {command}\n", error=False)
-        self.terminal.see(tk.END)
         self.run_button.pack_forget()
         self.stop_button.pack(side=tk.RIGHT, padx=5, pady=5)
         if self.folder_path and os.path.exists(self.folder_path):
@@ -1917,6 +1983,7 @@ class VSCodeLikeEditor:
             return 'break'
         threading.Thread(target=self.read_terminal_output, daemon=True).start()
         return 'break'
+
     def read_terminal_output(self):
         try:
             while self.process and self.process.poll() is None:
@@ -1937,7 +2004,9 @@ class VSCodeLikeEditor:
             self.terminal_output(f"Error reading output: {e}\n", error=True)
         finally:
             self.process = None
+
     def open_folder(self, event=None, path=None):
+
         default_dir = os.path.join(os.path.expanduser("~"), "Desktop")
         if not path:
             path = filedialog.askdirectory(
@@ -1955,6 +2024,7 @@ class VSCodeLikeEditor:
             self.folder_name_label.config(font='bold')
             self.start_file_monitor()
             self.root.focus_set()
+
     def select_file(self, file_path):
         """Call this function when selecting a file from the file tree"""
         self.current_file = file_path
@@ -1963,6 +2033,7 @@ class VSCodeLikeEditor:
             self.code_editor.delete("1.0", tk.END)
             self.code_editor.insert("1.0", file.read())
         self.root.after(5, self.auto_save)
+
     def update_line_numbers(self, event=None):
         self.line_numbers.config(state=tk.NORMAL)
         self.line_numbers.delete("1.0", tk.END)
@@ -1980,6 +2051,7 @@ class VSCodeLikeEditor:
         self.line_numbers.config(state=tk.DISABLED)
         self.sync_scroll()
         self.root.after(1, self.auto_save)
+
     def fuzzy_match(self, typed_word, suggestions):
         """Find words that match `typed_word`, even if letters are missing."""
         if not typed_word or not suggestions:
@@ -1989,10 +2061,12 @@ class VSCodeLikeEditor:
         if not matches:
             matches = difflib.get_close_matches(typed_word, suggestions, n=10, cutoff=0.4)
         return matches if matches else suggestions
+
     def on_shift_mouse_wheel(self, event):
         """Enables horizontal scrolling when Shift + Mouse Wheel is used."""
         self.code_editor.xview_scroll(-1 * (event.delta // 120), "units")
         return "break"
+
     def show_suggestions(self, event):
         if getattr(sys, 'frozen', False):
             from jedi.api.environment import get_default_environment
@@ -2000,8 +2074,7 @@ class VSCodeLikeEditor:
             script = jedi.Script(
                 code=self.code_editor.get("1.0", tk.END),
                 path=self.current_file or 'temp.py',
-                environment=env,
-                sys_path=[sys._MEIPASS, os.path.join(sys._MEIPASS, 'jedi')]
+                environment=env
             )
         else:
             script = jedi.Script(code=self.code_editor.get("1.0", tk.END))
@@ -2094,8 +2167,10 @@ class VSCodeLikeEditor:
             except Exception as e:
                 print("Jedi Error:", e)
                 self.suggestion_box.place_forget()
+
     def on_backspace(self, event):
         self.root.after(1, lambda: (self.update_line_numbers(), self.code_editor.see(tk.INSERT)))
+
     def handle_enter(self, event):
         """Handles both auto-indent and inserting suggestions when Enter is pressed."""
         if self.suggestion_box.winfo_ismapped():
@@ -2106,6 +2181,7 @@ class VSCodeLikeEditor:
         self.code_editor.see(tk.INSERT)
         self.root.after(1, self.auto_save)
         return "break"
+
     def insert_suggestion(self, event=None):
         """Inserts the selected suggestion into the text editor."""
         if self.suggestion_box.winfo_ismapped():
@@ -2121,6 +2197,7 @@ class VSCodeLikeEditor:
                 self.code_editor.focus_set()
                 return "break"
         return
+
     def navigate_suggestions(self, event):
         """Navigates suggestions if suggestion box is visible."""
         if self.suggestion_box.winfo_ismapped():
@@ -2157,6 +2234,7 @@ class VSCodeLikeEditor:
                     self.suggestion_box.see(self.suggestion_box.size() - 1)
                 return "break"
         return
+
     def skip_suggestion(self, event):
         """Closes suggestion box and moves cursor to the right."""
         if self.suggestion_box.winfo_ismapped():
@@ -2167,6 +2245,7 @@ class VSCodeLikeEditor:
         if col < len(line_text):
             self.code_editor.mark_set(tk.INSERT, f"{line}.{col + 1}")
         return "break"
+
     def on_paste(self, event):
         """Update line numbers after pasting text."""
         self.bg_label.place_forget()
@@ -2174,6 +2253,7 @@ class VSCodeLikeEditor:
         self.code_editor.after(1, self.highlight_syntax)
         self.root.after(1, self.auto_save)
         return None
+
     def delete_word(self, event):
         """Deletes the previous word or special character when Ctrl+Backspace is pressed and updates line numbers."""
         cursor_pos = self.code_editor.index(tk.INSERT)
@@ -2198,6 +2278,7 @@ class VSCodeLikeEditor:
             self.code_editor.delete(f"{line}.{word_end}", f"{line}.{col}")
         self.root.after(1, self.update_line_numbers)
         return "break"
+
     def delete_next_word(self, event):
         """Deletes the next word or special character when Ctrl+Delete is pressed and updates line numbers."""
         cursor_pos = self.code_editor.index(tk.INSERT)
@@ -2215,6 +2296,7 @@ class VSCodeLikeEditor:
             self.code_editor.delete(cursor_pos, end_pos)
         self.root.after(1, self.update_line_numbers)
         return "break"
+
     def move_cursor_after_selection(self, event):
         """Moves cursor based on arrow key direction after selection."""
         if self.code_editor.tag_ranges("sel"):
@@ -2228,6 +2310,7 @@ class VSCodeLikeEditor:
                 self.root.after(1, self.update_line_numbers)
             self.code_editor.tag_remove("sel", "1.0", tk.END)
             return "break"
+
     def insert_selected_suggestion(self, event):
         """Inserts the selected suggestion when Enter is pressed, preventing a new line if suggestions are open."""
         if self.suggestion_box.winfo_ismapped():
@@ -2247,6 +2330,7 @@ class VSCodeLikeEditor:
                 self.suggestion_box.place_forget()
                 return "break"
         return None
+
     def select_word(self, event):
         """Select the word on double-click and keep the cursor visible."""
         self.code_editor.tag_remove("sel", "1.0", "end")
@@ -2259,16 +2343,20 @@ class VSCodeLikeEditor:
             word_end = index
         self.code_editor.tag_add("sel", word_start, word_end)
         self.code_editor.config(insertontime=500)
+
     def enforce_max_width(self, event):
         current_width = self.folder_tree_frame.winfo_width()
         if current_width > 400:
             self.main_pane.sash_place(0, 400, 0)
+
     def reopen_terminal(self, event=None):
         self.vertical_pane.add(self.terminal_frame, height=270,stretch="never")
+
     def on_key_release(self, event):
         self.update_line_numbers()
         self.show_suggestions(event)
         self.on_text_change(event)
+
     def indent_selected_text(self, event=None):
         """Indent selected text with Tab."""
         if self.code_editor.tag_ranges("sel"):
@@ -2283,6 +2371,7 @@ class VSCodeLikeEditor:
         else:
             self.code_editor.insert(tk.INSERT, "    ")
             return "break"
+
     def unindent_selected_text(self, event=None):
         """Unindent selected text with Shift+Tab."""
         if self.code_editor.tag_ranges("sel"):
@@ -2303,6 +2392,7 @@ class VSCodeLikeEditor:
             if line_text.startswith("    "):
                 self.code_editor.delete(f"{line}.0", f"{line}.4")
             return "break"
+
     def move_to_next_word_boundary(self, event):
         """Move the cursor to the next word boundary (end of word or next special character)."""
         cursor_pos = self.code_editor.index(tk.INSERT)
@@ -2315,6 +2405,7 @@ class VSCodeLikeEditor:
             col += 1
         self.code_editor.mark_set(tk.INSERT, f"{line}.{col}")
         return "break"
+
     def move_to_previous_word_boundary(self, event):
         """Move the cursor to the previous word boundary (start of word or previous special character)."""
         cursor_pos = self.code_editor.index(tk.INSERT)
@@ -2327,6 +2418,7 @@ class VSCodeLikeEditor:
             col -= 1
         self.code_editor.mark_set(tk.INSERT, f"{line}.{col}")
         return "break"
+
     def make_file(self):
         if not self.folder_path:
             self.terminal_output(" [✖] No folder is opened.\n Please open a folder first.\n", error=True)
@@ -2373,6 +2465,7 @@ class VSCodeLikeEditor:
                 'is_directory': False
             })
             self.redo_stack.clear()
+
     def find_tree_item(self, path, parent=""):
         """Recursively search tree items to find one matching the given path."""
         children = self.file_tree.get_children(parent)
@@ -2385,9 +2478,11 @@ class VSCodeLikeEditor:
                 if result:
                     return result
         return None
+
     def custom_askstring(self, title, prompt):
         dialog = self.CustomInputDialog(self,self.root, title, prompt)
         return dialog.show()
+
     def make_folder(self):
         """Create new folder in current directory structure with validation"""
         if not self.folder_path:
@@ -2438,16 +2533,17 @@ class VSCodeLikeEditor:
                 'is_directory': True
             })
             self.redo_stack.clear()
+
     def truncate_folder_name(self, folder_name, max_length=20):
         """Truncate the folder name if it exceeds the maximum length."""
         if len(folder_name) > max_length:
             return folder_name[:max_length - 3] + "..."
         return folder_name
+
     def read_output_stream(self, stream, error):
         try:
             for line in iter(stream.readline, ''):
                 self.terminal_output(line, error)
-                self.terminal.see(tk.END)
                 if line.strip().endswith(":") or "input" in line.lower():
                     self.terminal_input.config(state='normal')
                     self.terminal_input.focus_set()
@@ -2455,6 +2551,7 @@ class VSCodeLikeEditor:
             stream.close()
         except Exception as e:
             self.terminal_output(f"Error reading output: {e}\n", error=True)
+
     def check_process_status(self):
         """Checks if the process is still running and updates the terminal."""
         while not self.output_queue.empty():
@@ -2470,6 +2567,7 @@ class VSCodeLikeEditor:
             self.stop_button.pack_forget()
             self.run_button.pack(side=tk.RIGHT, padx=5, pady=5)
             self.terminal_input.config(state='normal')
+
     def create_styled_entry(self, parent):
         entry = tk.Entry(
             parent,
@@ -2484,21 +2582,19 @@ class VSCodeLikeEditor:
             highlightbackground="#3e3e42"
         )
         return entry
+
     def show_context_menu(self, event):
         item = self.file_tree.identify_row(event.y)
         if item:
             self.file_tree.selection_set(item)
-            menu = tk.Menu(self.root, tearoff=0, bg=self.BLACK, fg="white", font=("Consolas", 12, 'italic'))
+            menu = tk.Menu(self.root, tearoff=0)
             menu.add_command(label="Cut         Ctrl+X", command=self.cut_items)
-            menu.add_command(label="Copy        Ctrl+C", command=self.copy_items)
-            menu.add_command(label="Paste       Ctrl+V", command=self.paste_items)
-            menu.add_separator()
-            menu.add_command(label="Copy Relative Path", command=self.copy_relative_path)
-            menu.add_command(label="Copy Full Path", command=self.copy_full_path)
+            menu.add_command(label="Copy      Ctrl+C", command=self.copy_items)
+            menu.add_command(label="Paste     Ctrl+V", command=self.paste_items)
             menu.add_separator()
             menu.add_command(label="Rename", command=self.rename_item)
-            menu.add_command(label="Delete", command=self.delete_items)
             menu.post(event.x_root, event.y_root)
+
     def rename_item(self):
         if self.rename_entry:
             return
@@ -2532,6 +2628,7 @@ class VSCodeLikeEditor:
         )
         self.rename_entry.select_range(0, tk.END)
         self.rename_entry.focus_set()
+
     def on_rename_complete(self, item, entry, old_path):
         new_name = entry.get().strip()
         entry.destroy()
@@ -2548,9 +2645,11 @@ class VSCodeLikeEditor:
         except Exception as e:
             self.terminal_output(f"Failed to rename: \nThe '{new_name}' already Exixts...\n",error=True)
             self.file_tree.item(item, text=f" {os.path.basename(old_path)}")
+
     def start_rename_via_shortcut(self, event=None):
         if not self.rename_entry:
             self.rename_item()
+
     def finish_rename(self, item, old_path):
         if not self.rename_entry:
             return
@@ -2579,11 +2678,13 @@ class VSCodeLikeEditor:
         except Exception as e:
             self.terminal_output(f"Failed to rename: \nThe '{new_name}' already Exixts...\n",error=True)
             self.file_tree.item(item, text=f" {os.path.basename(old_path)}")
+
     def cancel_rename(self, item, original_text):
         if self.rename_entry:
             self.rename_entry.destroy()
             self.rename_entry = None
         self.file_tree.item(item, text=f" {original_text}")
+
     def get_selected_paths(self):
         """Return list of paths for all selected items"""
         valid_paths = []
@@ -2597,6 +2698,7 @@ class VSCodeLikeEditor:
             except tk.TclError:
                 continue
         return valid_paths
+
     def confirm_delete(self, paths):
         """Show confirmation dialog for deletion"""
         item_list = "\n".join(f"• {os.path.basename(p)}" for p in paths)
@@ -2605,6 +2707,7 @@ class VSCodeLikeEditor:
             f"Are you sure you want to permanently delete these items?\n{item_list}",
             parent=self.root
         )
+
     def delete_items(self, event=None):
         """Delete selected items with backup for undo support"""
         expanded_paths = self.get_expanded_paths()
@@ -2676,6 +2779,7 @@ class VSCodeLikeEditor:
         self.terminal_output(f"Deleted {len(deletion_batch)} item(s) (Ctrl+Z to undo)\n")
         self.restore_expanded_paths(expanded_paths)
         self.file_tree.selection_set(())
+
     def on_drag_start(self, event):
         self.dragged_items = self.file_tree.selection()
         if not self.dragged_items:
@@ -2689,6 +2793,7 @@ class VSCodeLikeEditor:
             return
         self.drag_start_pos = (event.x, event.y)
         self.dragging = False
+
     def on_drag_motion(self, event):
         """Handle drag motion with visual feedback."""
         if not hasattr(self, 'drag_start_pos') or not self.valid_drag_items:
@@ -2708,6 +2813,7 @@ class VSCodeLikeEditor:
                     parent = self.file_tree.parent(item)
                     if parent:
                         self.file_tree.selection_set(parent)
+
     def on_drag_release(self, event):
         """Finalize drop operation with proper validation"""
         if not hasattr(self, 'dragging') or not self.dragging:
@@ -2768,8 +2874,10 @@ class VSCodeLikeEditor:
                 del self.dragged_items
             if hasattr(self, 'dragging'):
                 del self.dragging
+
     def get_expanded_paths(self):
         expanded = set()
+
         def traverse(parent):
             for child in self.file_tree.get_children(parent):
                 child_path = self.file_tree.item(child, "values")[0]
@@ -2778,7 +2886,9 @@ class VSCodeLikeEditor:
                     traverse(child)
         traverse('')
         return expanded
+
     def restore_expanded_paths(self, paths):
+
         def traverse(parent):
             for child in self.file_tree.get_children(parent):
                 child_path = self.file_tree.item(child, "values")[0]
@@ -2786,9 +2896,11 @@ class VSCodeLikeEditor:
                     self.file_tree.item(child, open=True)
                     traverse(child)
         traverse('')
+
     def focus_file_in_tree(self):
         if not self.current_file:
             return
+
         def recursive_search(tree, node):
             for child in tree.get_children(node):
                 values = tree.item(child, "values")
@@ -2800,6 +2912,7 @@ class VSCodeLikeEditor:
                     return True
             return False
         recursive_search(self.file_tree, "")
+
     def find_tree_child_node(self, parent, target_path):
         """Recursive helper for node search."""
         for child in self.file_tree.get_children(parent):
@@ -2811,6 +2924,7 @@ class VSCodeLikeEditor:
                 if result:
                     return result
         return None
+
     def open_search_bar(self, event=None):
         if hasattr(self, 'search_window') and self.search_window.winfo_exists():
             return
@@ -2836,12 +2950,14 @@ class VSCodeLikeEditor:
         self.close_btn.pack(side=tk.LEFT, padx=5, pady=5)
         self.text_search_entry.bind("<KeyRelease>", self.real_time_search)
         self.text_search_entry.bind("<Return>", lambda e: self.search_text())
+
     def close_search_bar(self):
         self.code_editor.tag_remove('search_match', "1.0", tk.END)
         if hasattr(self, 'search_window') and self.search_window.winfo_exists():
             self.search_window.destroy()
         if hasattr(self, 'character_count'):
             del self.character_count
+
     def search_text(self):
         self.code_editor.tag_remove('search_match', "1.0", tk.END)
         word = self.text_search_entry.get()
@@ -2866,13 +2982,16 @@ class VSCodeLikeEditor:
                                         foreground='#212157')
                 self.count_label.pack(side=tk.TOP, pady=5)
             self.code_editor.tag_config('search_match', background="yellow", foreground=self.BLACK)
+
     def start_move_search(self, event):
         self.search_window.x = event.x
         self.search_window.y = event.y
+
     def do_move_search(self, event):
         x = event.x_root - self.search_window.x
         y = event.y_root - self.search_window.y
         self.search_window.geometry(f"+{x}+{y}")
+
     def select_all_files_folders(self, event=None):
         selected_items = self.file_tree.selection()
         if not selected_items:
@@ -2881,6 +3000,7 @@ class VSCodeLikeEditor:
         all_children = self.file_tree.get_children(parent)
         self.file_tree.selection_set(all_children)
         return "break"
+
     def check_for_errors(self):
             """Check code for syntax errors using ast and pyflakes"""
             self.code_editor.tag_remove("error", "1.0", tk.END)
@@ -2893,6 +3013,7 @@ class VSCodeLikeEditor:
                 start = f"{lineno}.{col_offset-1}"
                 end = f"{lineno}.{col_offset}"
                 self.highlight_error(start, end)
+
     def highlight_error(self, start_pos, end_pos):
         """Highlight specific error range"""
         try:
@@ -2903,10 +3024,12 @@ class VSCodeLikeEditor:
                                     foreground="red")
         except tk.TclError:
             pass
+
     def filter_tree(self, event=None):
         if hasattr(self, '_filter_after_id'):
             self.root.after_cancel(self._filter_after_id)
         self._filter_after_id = self.root.after(300, self._perform_real_filter)
+
     def _perform_real_filter(self):
         search_text = self.tree_search_entry.get().strip().lower()
         if not self.folder_path:
@@ -2934,6 +3057,7 @@ class VSCodeLikeEditor:
             parent = os.path.dirname(path)
             path_map[parent].append(path)
         self.file_tree.delete(*self.file_tree.get_children())
+
         def build_tree(parent_node, parent_path):
             for child_path in sorted(path_map.get(parent_path, []), key=lambda x: os.path.basename(x).lower()):
                 is_dir = os.path.isdir(child_path)
@@ -2948,20 +3072,24 @@ class VSCodeLikeEditor:
                 if is_dir:
                     build_tree(node, child_path)
         build_tree("", self.folder_path)
+
     def get_file_icon(self, path):
         ext = os.path.splitext(path)[1].lower()
         return {
             '.py': self.python_icon,
             '.html': self.html_icon,
         }.get(ext, self.file_icon)
+
     def clear_placeholder(self,event):
             if self.tree_search_entry.get() == "Search":
                 self.tree_search_entry.delete(0, tk.END)
                 self.tree_search_entry.config(fg="white")
+
     def add_placeholder(self,event):
         if self.tree_search_entry.get() == "":
             self.tree_search_entry.insert(0, "Search")
             self.tree_search_entry.config(fg="gray")
+
     def check_click_outside_suggestion_box(self, event):
         if self.suggestion_box.winfo_ismapped():
             x, y = event.x_root, event.y_root
@@ -2971,18 +3099,22 @@ class VSCodeLikeEditor:
             sug_height = self.suggestion_box.winfo_height()
             if not (sug_x <= x <= sug_x + sug_width and sug_y <= y <= sug_y + sug_height):
                 self.suggestion_box.place_forget()
+
     def real_time_search(self, event=None):
         self.search_text()
         if hasattr(self, 'search_window') and self.search_window.winfo_exists():
             self.search_window.after(10, self.update_search_count)
+
     def update_search_count(self):
         if hasattr(self, 'count_label') and self.count_label.winfo_exists():
             self.count_label.config(text=self.character_count)
+
     def on_tree_click(self, event):
         """Track if Ctrl/Shift is pressed during a treeview click."""
         ctrl_pressed = (event.state & 0x0004) != 0
         shift_pressed = (event.state & 0x0001) != 0
         self.ctrl_shift_pressed_during_click = ctrl_pressed or shift_pressed
+
     def start_file_monitor(self):
         if self.folder_path:
             self.stop_file_monitor()
@@ -2991,16 +3123,19 @@ class VSCodeLikeEditor:
             self.observer.schedule(self.event_handler, self.folder_path, recursive=True)
             self.observer.start()
             self.root.after(100, self.check_for_file_changes)
+
     def stop_file_monitor(self):
         if self.observer:
             self.observer.stop()
             self.observer.join()
             self.observer = None
+
     def check_for_file_changes(self):
         if self.should_update:
             self.update_file_tree(self.folder_path)
             self.should_update = False
         self.root.after(500, self.check_for_file_changes)
+
     def cut_items(self, event=None):
         selected_items = self.file_tree.selection()
         if not selected_items:
@@ -3017,11 +3152,13 @@ class VSCodeLikeEditor:
                 if "cut_item" not in current_tags:
                     self.file_tree.item(item, tags=current_tags + ("cut_item",))
         self.file_tree.selection_remove(selected_items)
+
     def copy_items(self, event=None):
         expanded_paths = self.get_expanded_paths()
         self.clipboard["operation"] = "copy"
         self.clipboard["paths"] = self.get_selected_paths()
         self.restore_expanded_paths(expanded_paths)
+
     def paste_items(self, event=None):
         if not self.clipboard["paths"] or not self.clipboard["operation"]:
             return
@@ -3063,19 +3200,23 @@ class VSCodeLikeEditor:
             if self.clipboard["operation"] == "cut":
                 self.clipboard = {"operation": None, "paths": []}
         self.update_file_tree(self.folder_path)
+
     def on_mousewheel(self,event):
         self.file_tree.yview_scroll(int(-1*(event.delta/120)), "units")
+
     def save_sidebar_state(self):
         self.expanded_items = []
         for item in self.file_tree.get_children():
             self.save_expanded_recursive(item)
         self.selected_items = self.file_tree.selection()
         self.tree_scroll_position = self.file_tree.yview()
+
     def save_expanded_recursive(self, item):
         if self.file_tree.item(item, "open"):
             self.expanded_items.append(item)
         for child in self.file_tree.get_children(item):
             self.save_expanded_recursive(child)
+
     def restore_sidebar_state(self):
         for item in self.expanded_items:
             if self.file_tree.exists(item):
@@ -3084,6 +3225,7 @@ class VSCodeLikeEditor:
             self.file_tree.selection_set(self.selected_items)
         if hasattr(self, 'tree_scroll_position'):
             self.file_tree.yview_moveto(self.tree_scroll_position[0])
+
     def toggle_sidebar(self,event=None):
         if self.sidebar_visible:
             self.save_sidebar_state()
@@ -3097,15 +3239,19 @@ class VSCodeLikeEditor:
             self.main_pane.add(self.vertical_pane,)
             self.restore_sidebar_state()
             self.sidebar_visible = True
+
     def scroll_tabs_x(self, event):
         direction = -1 if event.delta > 0 else 1
         self.file_tab_canvas.xview_scroll(direction * 2, "units")
+
     def bind_mousewheel(self, event):
         self.editor_frame.bind_all("<Shift-MouseWheel>", self.scroll_tabs_x)
         self.editor_frame.bind_all("<MouseWheel>", self.scroll_tabs_x)
+
     def unbind_mousewheel(self, event):
         self.editor_frame.unbind_all("<Shift-MouseWheel>")
         self.editor_frame.unbind_all("<MouseWheel>")
+
     def add_file_tab(self, file_path):
         if file_path in self.opened_files:
             self.highlight_tab(file_path)
@@ -3127,6 +3273,7 @@ class VSCodeLikeEditor:
         self.update_tab_scroll()
         if self.tab_frame.winfo_reqwidth() > self.file_tab_canvas.winfo_width():
             self.canvas_scrollbar.pack(side=tk.TOP, fill=tk.X)
+
     def switch_to_tab(self, file_path):
         if file_path == self.current_file:
             return
@@ -3138,6 +3285,7 @@ class VSCodeLikeEditor:
         self.load_file(file_path)
         self.highlight_tab(file_path)
         self.focus_file_in_tree()
+
     def highlight_tab(self, file_path):
         for fp, (container, label, btn) in self.tab_buttons.items():
             bg = "#fbff53" if fp == file_path else "#151515"
@@ -3145,6 +3293,7 @@ class VSCodeLikeEditor:
             container.config(bg=bg)
             label.config(bg=bg, fg=fg)
             btn.config(bg=bg, fg=fg)
+
     def close_tab(self, file_path):
         if file_path not in self.opened_files:
             return
@@ -3160,19 +3309,23 @@ class VSCodeLikeEditor:
                 self.filename_label.config(text="")
         self.update_tab_scroll()
         self.update_line_numbers()
+
     def update_tab_scroll(self):
         self.tab_frame.update_idletasks()
         self.file_tab_canvas.configure(scrollregion=self.file_tab_canvas.bbox("all"))
         if self.tab_frame.winfo_reqwidth() <= self.file_tab_canvas.winfo_width():
             self.canvas_scrollbar.pack_forget()
+
     def toggle_all_folders(self, event=None):
         if not hasattr(self, 'folders_expanded'):
             self.folders_expanded = False
         all_items = self.file_tree.get_children()
+
         def expand_all(items):
             for item in items:
                 self.file_tree.item(item, open=True)
                 expand_all(self.file_tree.get_children(item))
+
         def collapse_all(items):
             for item in items:
                 self.file_tree.item(item, open=False)
@@ -3183,11 +3336,13 @@ class VSCodeLikeEditor:
         else:
             collapse_all(all_items)
             self.folders_expanded = False
+
     def terminal_delete_clear(self,event=None):
         self.terminal.config(state="normal")
         self.terminal.delete("1.0", tk.END)
         self.terminal.config(state="disabled")
         return 'break'
+
     def move_line(self, direction):
         cursor_index = self.code_editor.index(tk.INSERT)
         line_num, col = map(int, cursor_index.split("."))
@@ -3204,10 +3359,12 @@ class VSCodeLikeEditor:
         self.code_editor.delete(f"{line_num}.0", f"{line_num}.end+1c")
         self.code_editor.insert(f"{line_num}.0", swap_line)
         self.code_editor.mark_set(tk.INSERT, f"{line_num}.{col}")
+
     def open_new_terminal(self,event=None):
         self.reopen_terminal()
         self.terminal_delete_clear()
         return 'break'
+
     def insert_new_line_below(self, event=None):
         """Insert new line below with proper indentation"""
         cursor_pos = self.code_editor.index(tk.INSERT)
@@ -3222,6 +3379,7 @@ class VSCodeLikeEditor:
         new_line = line + 1
         self.code_editor.mark_set(tk.INSERT, f"{new_line}.{len(new_indent)}")
         return "break"
+
     def duplicate_line(self, event=None):
         """Duplicates the current line and inserts it below, keeping cursor on the duplicated line."""
         cursor_index = self.code_editor.index(tk.INSERT)
@@ -3234,6 +3392,7 @@ class VSCodeLikeEditor:
         self.code_editor.insert(line_end, "\n" + line_content)
         self.code_editor.mark_set("insert", new_cursor_pos)
         return "break"
+
     def modify_selection(self, direction, word_jump):
         current_pos = self.code_editor.index(tk.INSERT)
         anchor_pos = self.selection_anchor or current_pos
@@ -3245,6 +3404,7 @@ class VSCodeLikeEditor:
         if self.position_changed_direction(anchor_pos, current_pos, new_pos):
             self.selection_anchor = current_pos
         return "break"
+
     def calculate_new_position(self, pos, direction, word_jump):
         line, col = map(int, pos.split('.'))
         line_text = self.code_editor.get(f"{line}.0", f"{line}.end")
@@ -3282,6 +3442,7 @@ class VSCodeLikeEditor:
                     new_line = line
                     new_col = min(max_col, col + 1)
         return f"{new_line}.{new_col}"
+
     def find_previous_word_boundary(self, text, start_pos):
         if start_pos == 0:
             return 0
@@ -3299,6 +3460,7 @@ class VSCodeLikeEditor:
             while pos > 0 and not (text[pos-1].isalnum() or text[pos-1] == '_'):
                 pos -= 1
         return pos
+
     def find_next_word_boundary(self, text, start_pos):
         if start_pos >= len(text):
             return len(text)
@@ -3314,23 +3476,28 @@ class VSCodeLikeEditor:
             while pos < len(text) and not (text[pos].isalnum() or text[pos] == '_'):
                 pos += 1
         return pos
+
     def update_selection_range(self, anchor, cursor):
         self.code_editor.tag_remove("sel", "1.0", "end")
         if anchor != cursor:
             start = min(anchor, cursor, key=lambda x: (int(x.split('.')[0]), int(x.split('.')[1])))
             end = max(anchor, cursor, key=lambda x: (int(x.split('.')[0]), int(x.split('.')[1])))
             self.code_editor.tag_add("sel", start, end)
+
     def compare_positions(self, pos1, pos2):
         line1, col1 = map(int, pos1.split('.'))
         line2, col2 = map(int, pos2.split('.'))
         return (line1 < line2) or (line1 == line2 and col1 < col2)
+
     def position_changed_direction(self, anchor, old_pos, new_pos):
         anchor_before_old = self.compare_positions(anchor, old_pos)
         anchor_before_new = self.compare_positions(anchor, new_pos)
         return anchor_before_old != anchor_before_new
+
     def handle_mouse_click(self, event):
         self.selection_anchor = None
         self.code_editor.tag_remove("sel", "1.0", "end")
+
     def extract_code(self, text):
         if '```python' in text:
             parts = text.split('```python')
@@ -3341,6 +3508,7 @@ class VSCodeLikeEditor:
             if len(parts) >= 3:
                 return parts[1].strip()
         return text
+
     def handle_ai_query(self, event=None):
         """Handle AI code generation request"""
         query = self.AI_search_entry.get().strip()
@@ -3351,6 +3519,7 @@ class VSCodeLikeEditor:
         self.reopen_terminal()
         self.terminal_output("\n[AI] Generating code...Please Wait...\n", error=False)
         threading.Thread(target=self.generate_ai_code, args=(query,), daemon=True).start()
+
     def generate_ai_code(self, query):
         """Generate code using Gemini AI"""
         try:
@@ -3363,6 +3532,7 @@ class VSCodeLikeEditor:
             self.root.after(0, self.insert_ai_generated_code, extracted_code, response.text)
         except Exception as e:
             self.root.after(0, self.show_ai_error, str(e))
+
     def insert_ai_generated_code(self, code, full_response):
         """Insert generated code into editor"""
         pyperclip.copy(code)
@@ -3373,15 +3543,18 @@ class VSCodeLikeEditor:
         self.update_line_numbers()
         self.highlight_syntax()
         self.highlight_code_insertion()
+
     def highlight_code_insertion(self):
         """Visual feedback for code insertion"""
         cursor_pos = self.code_editor.index(tk.INSERT)
         self.code_editor.tag_add("ai_code", cursor_pos + "-1c linestart", cursor_pos + " lineend")
         self.code_editor.tag_config("ai_code", background="#2b2b2b")
         self.root.after(2000, lambda: self.code_editor.tag_remove("ai_code", "1.0", tk.END))
+
     def show_ai_error(self, error_msg):
         """Show error message for AI failures"""
         self.terminal_output(f"[AI Error] {error_msg}\n", error=True)
+
     def cut_whole_line(self, event):
         cursor_index = self.code_editor.index("insert")
         line_start = f"{cursor_index.split('.')[0]}.0"
@@ -3390,6 +3563,7 @@ class VSCodeLikeEditor:
         self.root.clipboard_append(self.code_editor.get(line_start, line_end))
         self.code_editor.delete(line_start, line_end)
         return "break"
+
     def wrap_selected_text(self, event):
             """Wraps selected text with brackets or quotes when a key is pressed."""
             char = event.char
@@ -3406,6 +3580,7 @@ class VSCodeLikeEditor:
                 new_end = self.code_editor.index(f"{start} + {len(selected_text) + 2} chars")
                 self.code_editor.tag_add(tk.SEL, start, new_end)
             return "break"
+
     def handle_external_drop(self, event):
         raw_paths = event.data.split()
         cleaned_paths = [p.strip('{}').replace('\\', '/') for p in raw_paths]
@@ -3425,10 +3600,12 @@ class VSCodeLikeEditor:
             elif os.path.isfile(path):
                 self.open_file(path)
                 break
+
     def schedule_import_check(self):
         if self.import_check_timer:
             self.root.after_cancel(self.import_check_timer)
         self.import_check_timer = self.root.after(300, self.check_imports)
+
     def check_imports(self):
         """Real-time import validation with alias handling"""
         self.code_editor.tag_remove("missing_module", "1.0", "end")
@@ -3452,6 +3629,7 @@ class VSCodeLikeEditor:
                         self.highlight_missing_module(match.start(), start_idx, module)
         except Exception as e:
             self.terminal_output(f"Import check error: {str(e)}\n")
+
     def is_module_available(self, module_name):
         """Check if a module is installed"""
         if module_name in sys.builtin_module_names:
@@ -3462,6 +3640,7 @@ class VSCodeLikeEditor:
             return False
         except Exception as e:
             return False
+
     def highlight_missing_module(self, offset, start_idx, module):
         """Highlight missing module in visible area"""
         line_start = self.code_editor.index(f"{start_idx}+{offset}c linestart")
@@ -3473,6 +3652,7 @@ class VSCodeLikeEditor:
             start_pos = f"{line_start}+{start}c"
             end_pos = f"{line_start}+{end}c"
             self.code_editor.tag_add("missing_module", start_pos, end_pos)
+
     def open_replace_dialog(self, event=None):
         if hasattr(self, 'replace_dialog') and self.replace_dialog.winfo_exists():
             if self.replace_dialog.state() == 'withdrawn':
@@ -3482,11 +3662,13 @@ class VSCodeLikeEditor:
             return
         self.replace_dialog = self.ReplaceDialog(self)
         self.replace_dialog.protocol("WM_DELETE_WINDOW", self.replace_dialog.on_close)
+
     def get_script(self):
         """Create Jedi Script with proper environment"""
         code = self.code_editor.get("1.0", tk.END)
         path = self.current_file if self.current_file else None
         return jedi.Script(code=code, path=path)
+
     def get_current_word(self, event):
         """More reliable word detection using Jedi"""
         try:
@@ -3501,6 +3683,7 @@ class VSCodeLikeEditor:
             return self.code_editor.get(f"{index} wordstart", f"{index} wordend")
         except Exception as e:
             return self.code_editor.get(f"{index} wordstart", f"{index} wordend")
+
     def find_definition_position(self, word):
         """Find the line number where the function is defined"""
         content = self.code_editor.get("1.0", tk.END)
@@ -3508,6 +3691,7 @@ class VSCodeLikeEditor:
             if re.match(fr'^\s*def\s+{word}\s*\(', line):
                 return lineno
         return None
+
     def jump_to_definition(self, event):
         """Improved Ctrl+Click navigation with proper file handling"""
         try:
@@ -3516,6 +3700,7 @@ class VSCodeLikeEditor:
             line, col = map(int, index.split('.'))
             col += 1
             script = self.get_script()
+
             defs = script.goto(line, col, follow_imports=False)
             if not defs:
                 self.terminal_output("No definition found\n", error=True)
@@ -3534,6 +3719,7 @@ class VSCodeLikeEditor:
                     rel_path = first_def.module_path
                 self.terminal_output(f"Definition in: {rel_path}\n")
                 return
+
             def_line = first_def.line
             target_index = f"{def_line}.0"
             self.code_editor.mark_set(tk.INSERT, target_index)
@@ -3545,35 +3731,17 @@ class VSCodeLikeEditor:
                 "definition_highlight", "1.0", tk.END))
         except Exception as e:
             self.terminal_output(f"Navigation error: {str(e)}\n", error=True)
+
     def on_terminal_focus_in(self, event):
         if self.terminal_input.get() == self.terminal_input_placeholder_text:
             self.terminal_input.delete(0, tk.END)
             self.terminal_input.config(fg=self.TERMINAL_FG)
+
     def on_terminal_focus_out(self, event):
         if not self.terminal_input.get():
             self.terminal_input.insert(0, self.terminal_input_placeholder_text)
             self.terminal_input.config(fg="gray")
-    def copy_relative_path(self):
-        selected_item = self.file_tree.selection()
-        if not selected_item:
-            return
-        item = selected_item[0]
-        values = self.file_tree.item(item, "values")
-        if values and values[0] and self.folder_path:
-            full_path = values[0]
-            relative_path = os.path.relpath(full_path, self.folder_path)
-            pyperclip.copy(relative_path)
-            self.terminal_output(f"Copied relative path: {relative_path}\n")
-    def copy_full_path(self):
-        selected_item = self.file_tree.selection()
-        if not selected_item:
-            return
-        item = selected_item[0]
-        values = self.file_tree.item(item, "values")
-        if values and values[0]:
-            full_path = values[0]
-            pyperclip.copy(full_path)
-            self.terminal_output(f"Copied full path: {full_path}\n")
+
     def change_dark_blue_theme(self,e = None):
         BACK_GROUND = "#001a33"
         RUN_BTN = "#1a4897"
@@ -3726,6 +3894,7 @@ class VSCodeLikeEditor:
         if hasattr(self, 'replace_dialog') and self.replace_dialog.winfo_exists():
             self.replace_dialog.update_theme()
         self.root.update()
+
     def change_dark_theme(self,e = None):
         BACK_GROUND = "black"
         RUN_BTN = "#3e3e3e"
@@ -3878,6 +4047,7 @@ class VSCodeLikeEditor:
         self.root.update()
         if hasattr(self, 'replace_dialog') and self.replace_dialog.winfo_exists():
             self.replace_dialog.update_theme()
+
     def change_dark_green_theme(self,e = None):
         BACK_GROUND = "#062000"
         RUN_BTN = "#3a5f23"
@@ -4030,6 +4200,7 @@ class VSCodeLikeEditor:
         self.root.update()
         if hasattr(self, 'replace_dialog') and self.replace_dialog.winfo_exists():
             self.replace_dialog.update_theme()
+
     def change_dark_gray_theme(self,e = None):
         BACK_GROUND = "#242424"
         RUN_BTN = "#939393"
@@ -4182,6 +4353,7 @@ class VSCodeLikeEditor:
             self.replace_dialog.update_theme()
         self._highlight_syntax()
         self.root.update()
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         script_path = sys.argv[1]
